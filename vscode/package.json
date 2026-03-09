@@ -3,12 +3,12 @@
     "displayName": "Fidan",
     "description": "Syntax highlighting, formatting and language server support for the Fidan programming language.",
     "version": "1.0.0",
-    "publisher": "AppSolves",
+    "publisher": "fidan",
     "license": "SEE LICENSE IN LICENSE",
     "icon": "./icons/icon_128x128.png",
     "repository": {
         "type": "git",
-        "url": "https://github.com/AppSolves/fidan"
+        "url": "https://github.com/fidan-lang/fidan"
     },
     "engines": {
         "vscode": "^1.110.0"
@@ -444,10 +444,10 @@
         "vscode-languageclient": "^9.0.1"
     },
     "devDependencies": {
-        "@types/node": "^25.3.5",
+        "@types/node": "^25.4.0",
         "@types/vscode": "^1.85.0",
-        "@typescript-eslint/eslint-plugin": "^8.56.1",
-        "@typescript-eslint/parser": "^8.56.1",
+        "@typescript-eslint/eslint-plugin": "^8.57.0",
+        "@typescript-eslint/parser": "^8.57.0",
         "eslint": "^10.0.3",
         "typescript": "^5.4.0"
     }

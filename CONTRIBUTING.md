@@ -15,40 +15,48 @@ git clone https://github.com/fidan-lang/fidan-editors.git
 cd fidan-editors
 ```
 
-### 2. Build the workspace
+### 2. Install dependencies
 
 ```bash
-cargo build
+cd vscode
+npm install
 ```
 
-### 3. Run tests
+### 3. Compile the extension
 
 ```bash
-cargo test
+npm run compile
 ```
 
-Before submitting a pull request, make sure the project builds successfully and all relevant tests pass.
+Press **F5** in VS Code (with this workspace open) to launch the **Extension Development Host** and test the extension live.
+
+### 4. Run tests
+
+```bash
+npm test
+```
+
+Before submitting a pull request, make sure the project compiles cleanly and all relevant tests pass.
 
 ---
 
 ## Project Structure
 
-The repository is organized as a Cargo workspace.
-
 ```text
-crates/
-    lexer
-    parser
-    ast
-    compiler
-    runtime
-
-editors/
-    vscode
+fidan-editors/
+├── vscode/          # VS Code extension (TypeScript)
+│   ├── src/         # Extension source (extension.ts)
+│   ├── syntaxes/    # TextMate grammar + code snippets (.json)
+│   ├── icons/       # Extension icons
+│   ├── package.json # Extension manifest
+│   └── tsconfig.json
+├── CONTRIBUTING.md
+├── CODE_OF_CONDUCT.md
+├── SECURITY.md
+└── LICENSE
 ```
 
-Core language components live inside `crates/`.  
-Editor integrations and developer tooling live inside `editors/`.
+All extension source lives inside `vscode/`. Additional editor integrations (e.g. Neovim, JetBrains) may be added as sibling directories in the future.
 
 As the project evolves, additional crates and tooling may be added. Please try to keep contributions aligned with the existing project structure.
 
@@ -101,16 +109,16 @@ Recommended prefixes:
 
 ## Code Style
 
-Fidan follows standard Rust conventions.
+The extension is written in **TypeScript** and follows standard TypeScript/Node.js conventions.
 
 Before submitting a pull request, run:
 
 ```bash
-cargo fmt
-cargo clippy
+cd vscode
+npm run compile
 ```
 
-Code should compile cleanly and avoid unnecessary warnings whenever possible.
+Code should compile cleanly with no TypeScript errors or warnings whenever possible.
 
 Please try to match the style and structure already used in the surrounding code. Consistency is more important than personal style preferences.
 
@@ -162,11 +170,11 @@ If your contribution changes behavior, please add or update tests whenever pract
 
 Relevant test categories may include:
 
-- lexer tests
-- parser tests
-- semantic analysis tests
-- runtime/interpreter tests
-- language server/editor tests
+- Extension activation tests
+- LSP client integration tests
+- Command registration tests
+- Syntax highlighting / grammar tests
+- Settings round-trip tests
 
 Bug fixes should ideally include a regression test so the issue does not return later.
 
@@ -199,12 +207,14 @@ Details will be provided during the pull request process.
 
 If you encounter a bug, please open a GitHub issue and include:
 
-- Fidan version
+- Extension version (found in the Extensions panel)
+- VS Code version
+- `fidan` binary version (`fidan --version`)
 - Operating system
-- Minimal reproduction code
-- Expected behavior
-- Actual behavior
-- Any relevant logs or diagnostics
+- Steps to reproduce
+- Expected behaviour
+- Actual behaviour
+- Any relevant logs (use `Fidan: Show Language Server Output` to capture LSP output)
 
 Clear reproduction steps make issues much easier to investigate.
 
