@@ -8,7 +8,7 @@
     "icon": "./icons/icon_128x128.png",
     "repository": {
         "type": "git",
-        "url": "https://github.com/fidan-lang/fidan"
+        "url": "https://github.com/fidan-lang/fidan.git"
     },
     "engines": {
         "vscode": "^1.110.0"
@@ -445,7 +445,7 @@
     },
     "devDependencies": {
         "@types/node": "^25.4.0",
-        "@types/vscode": "^1.85.0",
+        "@types/vscode": "^1.110.0",
         "@typescript-eslint/eslint-plugin": "^8.57.0",
         "@typescript-eslint/parser": "^8.57.0",
         "eslint": "^10.0.3",
