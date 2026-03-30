@@ -3,10 +3,8 @@
   <h1>fidan-editors</h1>
   <p><em>Official editor integrations for the <strong>Fidan</strong> programming language</em></p>
 
-  [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/fidan.fidan?label=Marketplace&logo=visualstudiocode&logoColor=white&color=0078d7)](https://marketplace.visualstudio.com/items?itemName=fidan.fidan)
-  [![VS Code Engine](https://img.shields.io/badge/VS%20Code-%5E1.110.0-007ACC?logo=visualstudiocode&logoColor=white)](https://code.visualstudio.com)
-  [![License](https://img.shields.io/badge/license-Apache--2.0%20(Modified)-brightgreen)](LICENSE)
-  [![Fidan Language](https://img.shields.io/badge/language-Fidan-orange)](https://github.com/fidan-lang/fidan)
+  [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/fidan.fidan?label=Marketplace&logo=visualstudiocode&logoColor=white&color=0078d7)](https://marketplace.visualstudio.com/items?itemName=fidan.fidan)&nbsp;[![VS Code Engine](https://img.shields.io/badge/VS%20Code-%5E1.110.0-007ACC?logo=visualstudiocode&logoColor=white)](https://code.visualstudio.com)
+  [![License](https://img.shields.io/badge/license-Apache--2.0%20(Modified)-brightgreen)](LICENSE)&nbsp;[![Fidan Language](https://img.shields.io/badge/language-Fidan-orange)](https://github.com/fidan-lang/fidan)
 </div>
 
 ---
@@ -35,18 +33,19 @@ The **Fidan** VS Code extension (`fidan.fidan`) provides first-class editing sup
 |---|---|
 | Syntax highlighting (TextMate grammar) | ✅ |
 | Semantic token highlighting | ✅ |
-| Bracket & comment configuration | ✅ |
+| Bracket, comment, and indent configuration | ✅ |
 | Code snippets | ✅ |
-| Format on save (`fidan fmt`) | ✅ via LSP |
+| Format on save (`fidan format`) | ✅ via LSP |
 | Error & warning diagnostics | ✅ via LSP |
+| Hover documentation | ✅ via LSP |
+| Auto-completion | ✅ via LSP |
+| Go to definition / find references | ✅ via LSP |
+| Inline type hints | ✅ via LSP |
+| Quick fixes / code actions | ✅ via LSP |
 | Run / Build / Test / Check / Fix from the editor | ✅ |
 | Integrated REPL | ✅ |
 | Profiling | ✅ |
 | Sandbox mode with fine-grained permissions | ✅ |
-| Hover documentation | 🚧 in progress |
-| Auto-completion | 🚧 planned |
-| Go to definition / find references | 🚧 planned |
-| Inline type hints | 🚧 in progress |
 
 ---
 
@@ -56,7 +55,7 @@ The **Fidan** VS Code extension (`fidan.fidan`) provides first-class editing sup
 
 Search for **Fidan** in the VS Code Extensions panel, or install directly:
 
-```
+```bash
 ext install fidan.fidan
 ```
 
@@ -74,6 +73,7 @@ ext install fidan.fidan
 2. Then build and install the extension:
 
    ```bash
+   git clone https://github.com/fidan-lang/fidan-editors
    cd fidan-editors/vscode
    npm install
    npm run compile
@@ -87,137 +87,154 @@ ext install fidan.fidan
 
 ### Language Overview
 
-Fidan is an English-readable compiled language. Below are bite-sized examples of common patterns — all valid `.fdn` syntax.
+Fidan is an English-readable native language with interpreter, JIT, and AOT workflows. Below are bite-sized examples of common patterns in current `.fdn` syntax.
 
 #### Variables
 
 ```fidan
-var x set 10                    # integer
-var greeting set "hello"        # string
-var ratio set 3.14              # float
-var flag set true               # boolean
-var nothing_val set nothing     # null
-var d set dynamic               # opt out of static type checking
+var x = 10
+var greeting = "hello"
+var ratio = 3.14
+var flag = true
+var nothingVal = nothing
+var d = dynamic
 ```
 
 #### Actions (functions)
 
 ```fidan
-action greet with (certain name oftype string) returns string
-    return "Hello, " + name
-end
+action greet with (certain name oftype string) returns string {
+    return "Hello, {name}"
+}
 
-action safe_div with (certain a oftype integer, certain b oftype integer) returns float
-    if b equals 0 then return 0.0 end
+action safeDiv with (
+    certain a oftype integer,
+    certain b oftype integer,
+) returns float {
+    if b == 0 {
+        return 0.0
+    }
     return a / b
-end
+}
 ```
 
 #### Objects (classes)
 
 ```fidan
-object Point
-    var x oftype integer
-    var y oftype integer
+object Point {
+    var x oftype integer = 0
+    var y oftype integer = 0
 
-    action new with (certain x oftype integer, certain y oftype integer)
-        set self.x = x
-        set self.y = y
-    end
+    new with (certain x oftype integer, certain y oftype integer) {
+        this.x = x
+        this.y = y
+    }
 
-    action to_string returns string
-        return "(" + self.x + ", " + self.y + ")"
-    end
-end
+    action toString returns string {
+        return "({this.x}, {this.y})"
+    }
+}
 ```
 
 #### Enums
 
 ```fidan
-enum Direction
+enum Direction {
     North
     South
     East
     West
-end
+}
 ```
 
 #### Control Flow
 
 ```fidan
-# if / else if / else
-if score > 90 then
+if score > 90 {
     print("A")
-else if score > 75 then
+} else if score > 75 {
     print("B")
-else
+} else {
     print("C")
-end
+}
 
-# loop (range-based, implicit loop variable i)
-loop from 1 to 10
-    print(i)
-end
-
-# for-each
-for item in items
+for item in items {
     print(item)
-end
+}
 
-# while
-while queue is not empty
-    process(queue)
-end
+while queue.length() > 0 {
+    process(queue.pop())
+}
 
-# pattern matching
-check status
-    case 200 => print("OK")
-    case 404 => print("Not found")
-    else     => print("Unknown")
-end
+check status {
+    200 => {
+        print("OK")
+    }
+    404 => {
+        print("Not found")
+    }
+    _ => {
+        print("Unknown")
+    }
+}
 ```
 
 #### Concurrency
 
 ```fidan
-# Cooperative I/O tasks
-concurrent
-    task A { fetch("https://api.example.com/a") }
-    task B { fetch("https://api.example.com/b") }
-end
+use std.async
 
-# True OS threads (Rayon)
-parallel
-    task A { heavy_compute_a() }
-    task B { heavy_compute_b() }
-end
+action square with (certain n oftype integer) returns integer {
+    return n * n
+}
 
-# Explicit futures
-var handle set spawn expensive_action()
-await handle
+var handle = spawn square(12)
+print("spawn returned a pending handle immediately")
+print("await result = {string(await handle)}")
 
-# Shared cross-thread state (Arc<Mutex>)
-var counter oftype Shared oftype integer set 0
+concurrent {
+    task first {
+        print("same-thread task A")
+    }
+    task second {
+        var nested = spawn square(5)
+        print("same-thread task B = {string(await nested)}")
+    }
+}
+
+parallel {
+    task left {
+        print("threaded task A")
+    }
+    task right {
+        print("threaded task B")
+    }
+}
+
+var raced = await async.waitAny([async.sleep(25), async.ready(99)])
+print(raced)
 ```
 
-#### Imports & Decorators
+#### Imports, Raw Strings, and Decorators
 
 ```fidan
-use std.io                    # stdlib I/O namespace
-use std.io.{print, read}      # selective import
-use mymodule as mod           # import with alias
+use std.io
+use std.async as async
+use mymodule as mod
 
-@precompile                   # eager Cranelift JIT warm-up
-action hot_path with (certain n oftype integer) returns integer
+print(r"literal \\n \{value\}")
+
+@precompile
+action hotPath with (certain n oftype integer) returns integer {
     return n * n
-end
+}
 ```
 
 ---
 
 ### Commands
 
-All commands are reachable via the **Command Palette** (`Ctrl+Shift+P`). Run and Test also appear as title-bar icons when a `.fdn` file is active.
+All commands are reachable via the **Command Palette** (`Ctrl+Shift+P`). **Run** and **Test** also appear as title-bar icons when a `.fdn` file is active.
 
 | Command | Description |
 |---|---|
@@ -225,13 +242,13 @@ All commands are reachable via the **Command Palette** (`Ctrl+Shift+P`). Run and
 | `Fidan: Build File` | Compile to a native binary via Cranelift AOT |
 | `Fidan: Check File` | Type-check without producing output |
 | `Fidan: Fix File` | Apply auto-fixable diagnostics |
-| `Fidan: Format Current File` | Invoke `fidan fmt` on the active file |
+| `Fidan: Format Current File` | Format the active file through the language server |
 | `Fidan: Run Tests in Current File` | Discover and run all `test { }` blocks |
 | `Fidan: Profile Current File` | Run with profiling instrumentation |
 | `Fidan: Open REPL` | Open a `fidan repl` session |
 | `Fidan: New Project` | Scaffold a new Fidan project |
-| `Fidan: Explain Diagnostic Code` | Look up a diagnostic code (e.g. `E0109`) |
-| `Fidan: Explain Current Line(s)` | Inline explanation for selected line(s) |
+| `Fidan: Explain Diagnostic Code` | Look up a diagnostic code (for example `E0109`) |
+| `Fidan: Explain Current Line(s)` | Explain the selected line range |
 | `Fidan: Restart Language Server` | Kill and restart the LSP process |
 | `Fidan: Show Language Server Output` | Open the LSP output channel |
 
@@ -253,20 +270,22 @@ All settings live under the `fidan.*` namespace in VS Code.
 
 | Setting | Default | Description |
 |---|---|---|
-| `fidan.format.indentWidth` | `4` | Spaces per indent level |
-| `fidan.format.maxLineLen` | `100` | Target maximum line length |
+| `fidan.format.indentWidth` | `4` | Spaces per indent level used by formatting defaults |
+| `fidan.format.maxLineLen` | `100` | Target maximum line length used by formatting defaults |
 | `fidan.format.onSave` | `true` | Format automatically on save |
+
+`.fidanfmt` files are still respected by the formatter itself; these settings act as editor-side defaults and overrides.
 
 #### Run
 
 | Setting | Default | Description |
 |---|---|---|
 | `fidan.run.terminalName` | `"Fidan"` | Name of the integrated terminal |
-| `fidan.run.reload` | `false` | Pass `--reload` (watch & re-run on change) |
+| `fidan.run.reload` | `false` | Pass `--reload` (watch and re-run on change) |
 | `fidan.run.strict` | `false` | Treat select warnings as errors |
 | `fidan.run.trace` | `"none"` | Panic stack-trace mode: `none` \| `short` \| `full` \| `compact` |
 | `fidan.run.jitThreshold` | `500` | Cranelift JIT call threshold (`0` = disable JIT) |
-| `fidan.run.suppress` | `[]` | Diagnostic codes to suppress (e.g. `["W1004"]`) |
+| `fidan.run.suppress` | `[]` | Diagnostic codes to suppress |
 | `fidan.run.emit` | `[]` | Emit intermediate IRs: `tokens` \| `ast` \| `hir` \| `mir` |
 | `fidan.run.maxErrors` | `0` | Stop after N errors (`0` = no limit) |
 
@@ -327,7 +346,7 @@ Press **F5** in VS Code (with this workspace open) to launch the **Extension Dev
 
 ## Contributing
 
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) and follow the [Code of Conduct](CODE_OF_CONDUCT.md) before submitting a pull request.
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and follow the [Code of Conduct](CODE_OF_CONDUCT.md) before submitting a pull request.
 
 Security issues should be reported in accordance with [SECURITY.md](SECURITY.md) rather than opened as public issues.
 
@@ -339,5 +358,5 @@ This extension is licensed under the **Apache License 2.0**. See [LICENSE](LICEN
 
 Additional terms apply regarding trademark use and commercial distribution of the Fidan language itself; see [NOTICE](NOTICE).
 
-Copyright © 2026 Kaan Gönüldinc (AppSolves). All rights reserved.  
+Copyright © 2026 Kaan Gönüldinc (AppSolves). All rights reserved.
 **Fidan™** is a trademark of Kaan Gönüldinc (AppSolves).
