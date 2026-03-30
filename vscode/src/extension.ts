@@ -195,14 +195,24 @@ function refreshFormatOnSave(context: vscode.ExtensionContext): void {
         return;
       }
 
+      const editorConfig = vscode.workspace.getConfiguration("editor", event.document.uri);
+      if (editorConfig.get<boolean>("formatOnSave") ?? false) {
+        return;
+      }
+
       const liveConfig = vscode.workspace.getConfiguration("fidan");
-      const tabSize = liveConfig.get<number>("format.indentWidth") ?? 4;
+      const tabSizeSetting = editorConfig.get<number | string>("tabSize");
+      const tabSize =
+        typeof tabSizeSetting === "number"
+          ? tabSizeSetting
+          : (liveConfig.get<number>("format.indentWidth") ?? 4);
+      const insertSpaces = editorConfig.get<boolean>("insertSpaces") ?? true;
       event.waitUntil(
         vscode.commands
           .executeCommand<vscode.TextEdit[]>(
             "vscode.executeFormatDocumentProvider",
             event.document.uri,
-            { tabSize, insertSpaces: true },
+            { tabSize, insertSpaces },
           )
           .then((edits: vscode.TextEdit[] | undefined) => edits ?? []),
       );

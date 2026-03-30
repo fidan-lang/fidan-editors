@@ -135,7 +135,7 @@
         "fidan.format.onSave": {
           "type": "boolean",
           "default": true,
-          "description": "Format Fidan files automatically on save."
+          "description": "Fallback save-format hook used when VS Code editor.formatOnSave is disabled for Fidan files."
         },
         "fidan.run.terminalName": {
           "type": "string",
@@ -428,7 +428,11 @@
         "editor.semanticHighlighting.enabled": true,
         "editor.codeActionsOnSave": {
           "source.organizeImports": "explicit"
-        }
+        },
+        "editor.defaultFormatter": "fidan.fidan",
+        "editor.formatOnSave": true,
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4
       }
     }
   },
