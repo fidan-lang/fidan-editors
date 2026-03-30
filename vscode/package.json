@@ -431,6 +431,7 @@
         },
         "editor.defaultFormatter": "fidan.fidan",
         "editor.formatOnSave": true,
+        "editor.detectIndentation": false,
         "editor.insertSpaces": true,
         "editor.tabSize": 4
       }
