@@ -439,7 +439,7 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run sync-license && npm run compile",
-    "sync-license": "node -e \"require('fs').copyFileSync('../../LICENSE', 'LICENSE')\"",
+    "sync-license": "node -e \"require('fs').copyFileSync('../LICENSE', 'LICENSE')\"",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "lint": "eslint src --ext ts"
