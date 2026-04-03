@@ -30,7 +30,7 @@ The `fidan` binary must be on your `PATH`, or point the extension at it via `fid
 Build from source:
 
 ```bash
-git clone https://github.com/fidan-lang/fidan
+git clone https://github.com/fidan-lang/fidan.git
 cd fidan
 cargo build --release
 # Add target/release/ to your PATH
