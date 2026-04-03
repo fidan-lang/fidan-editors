@@ -1,8 +1,7 @@
 {
   "comments": {
-    "lineComment": {
-      "comment": "#"
-    },
+    // Don't use the object form, it causes weird red exclamation marks in the editor
+    "lineComment": "#",
     "blockComment": [
       "#/",
       "/#"
