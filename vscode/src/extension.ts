@@ -20,11 +20,47 @@ function fidanBin(config: vscode.WorkspaceConfiguration): string {
 }
 
 function terminalBin(config: vscode.WorkspaceConfiguration): string {
-  return q(fidanBin(config));
+  const bin = q(fidanBin(config));
+  return needsPowerShellCallOperator() ? `& ${bin}` : bin;
 }
 
 function q(p: string): string {
   return `"${p.replace(/"/g, '\\"')}"`;
+}
+
+function needsPowerShellCallOperator(): boolean {
+  if (process.platform !== "win32") {
+    return false;
+  }
+
+  const shellHint = resolveTerminalShellHint();
+  if (!shellHint) {
+    return true;
+  }
+
+  return /(pwsh|powershell)(\.exe)?$/i.test(shellHint);
+}
+
+function resolveTerminalShellHint(): string | undefined {
+  const terminalConfig = vscode.workspace.getConfiguration("terminal.integrated");
+  const defaultProfile = terminalConfig.get<string>("defaultProfile.windows");
+  const profiles = terminalConfig.get<Record<string, { path?: string | string[]; source?: string }>>(
+    "profiles.windows",
+  );
+
+  if (defaultProfile && profiles?.[defaultProfile]) {
+    const profile = profiles[defaultProfile];
+    if (typeof profile.source === "string" && profile.source.length > 0) {
+      return profile.source;
+    }
+
+    const shellPath = Array.isArray(profile.path) ? profile.path[0] : profile.path;
+    if (typeof shellPath === "string" && shellPath.length > 0) {
+      return shellPath;
+    }
+  }
+
+  return undefined;
 }
 
 async function requireActiveFidanFile(save = true): Promise<string | undefined> {
@@ -567,3 +603,4 @@ function setStatusBarError(): void {
   statusBarItem.backgroundColor = new vscode.ThemeColor("statusBarItem.errorBackground");
   statusBarItem.tooltip = "Fidan Language Server — failed to start. Click to show output.";
 }
+
