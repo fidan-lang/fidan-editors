@@ -7,7 +7,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [v1.0.1] - 2026-04-03
 
 - Reduce extension size by removing unnecessary files
-- Update README with installation instructions
+- Update [README](./README.md) with installation instructions
 
 ## [v1.0.0] - 2026-04-03
 
