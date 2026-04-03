@@ -1,6 +1,6 @@
 # Fidan — VS Code Extension
 
-First-class VS Code support for the [Fidan](https://github.com/fidan-lang/fidan) programming language. Powered by the `fidan lsp` language server.
+First-class VS Code support for the [Fidan](https://fidan.dev) programming language. Powered by the `fidan lsp` language server.
 
 ## Features
 

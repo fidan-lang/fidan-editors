@@ -4,7 +4,7 @@
   <p><em>Official editor integrations for the <strong>Fidan</strong> programming language</em></p>
 
   [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/fidan.fidan?label=Marketplace&logo=visualstudiocode&logoColor=white&color=0078d7)](https://marketplace.visualstudio.com/items?itemName=fidan.fidan)&nbsp;[![VS Code Engine](https://img.shields.io/badge/VS%20Code-%5E1.110.0-007ACC?logo=visualstudiocode&logoColor=white)](https://code.visualstudio.com)
-  [![License](https://img.shields.io/badge/license-Apache--2.0%20(Modified)-brightgreen)](LICENSE)&nbsp;[![Fidan Language](https://img.shields.io/badge/language-Fidan-orange)](https://github.com/fidan-lang/fidan)
+  [![License](https://img.shields.io/badge/license-Apache--2.0%20(Modified)-brightgreen)](LICENSE)&nbsp;[![Fidan Language](https://img.shields.io/badge/language-Fidan-orange)](https://fidan.dev)
 </div>
 
 ---
