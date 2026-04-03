@@ -215,5 +215,15 @@
     "prefix": "print",
     "body": "print(${1:\"Hello, world!\"})",
     "description": "Print to stdout"
+  },
+  "Shared value": {
+    "prefix": "shared",
+    "body": "var ${1:shared} = Shared(${0:value})",
+    "description": "Wrap a value in a Shared handle"
+  },
+  "WeakShared handle": {
+    "prefix": "weakshared",
+    "body": "var ${1:weak} = WeakShared(${0:shared})",
+    "description": "Create a WeakShared handle from a Shared value"
   }
 }

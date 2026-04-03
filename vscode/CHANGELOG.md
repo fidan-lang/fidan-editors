@@ -4,6 +4,11 @@ All notable changes to the "fidan" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [v1.0.4] - 2026-04-04
+
+- Add first-class `WeakShared(...)` constructor highlighting
+- Add `Shared` / `WeakShared` snippets
+
 ## [v1.0.3] - 2026-04-04
 
 - Fix `powershell` command execution on Windows

@@ -6,6 +6,7 @@
   "patterns": [
     { "include": "#block-comment" },
     { "include": "#line-comment" },
+    { "include": "#use-import" },
     { "include": "#decorator" },
     { "include": "#raw-string" },
     { "include": "#string" },
@@ -18,6 +19,7 @@
     { "include": "#keyword-control" },
     { "include": "#keyword-modifier" },
     { "include": "#keyword-operator" },
+    { "include": "#type-conversion-call" },
     { "include": "#type-builtin" },
     { "include": "#constant-language" },
     { "include": "#function-call" },
@@ -26,6 +28,33 @@
     { "include": "#identifier" }
   ],
   "repository": {
+    "use-import": {
+      "begin": "\\b(use)\\b",
+      "beginCaptures": {
+        "0": { "name": "keyword.declaration.fidan" }
+      },
+      "end": "$",
+      "patterns": [
+        { "include": "#raw-string" },
+        { "include": "#string" },
+        {
+          "match": "\\b(as)\\b",
+          "name": "keyword.declaration.fidan"
+        },
+        {
+          "match": "[{}]",
+          "name": "punctuation.section.import.fidan"
+        },
+        {
+          "match": "[.,]",
+          "name": "punctuation.separator.import.fidan"
+        },
+        {
+          "match": "\\b[A-Za-z_][A-Za-z0-9_]*\\b",
+          "name": "entity.name.class.fidan"
+        }
+      ]
+    },
     "block-comment": {
       "name": "comment.block.fidan",
       "begin": "#/",
@@ -109,7 +138,7 @@
       "name": "keyword.declaration.fidan"
     },
     "keyword-control": {
-      "match": "\\b(if|otherwise|else|when|for|in|while|break|continue|return|attempt|catch|finally|spawn|await|concurrent|parallel|task|check|panic)\\b",
+      "match": "\\b(if|otherwise|else|when|for|in|while|break|stop|continue|return|attempt|try|catch|rescue|finally|spawn|await|concurrent|parallel|task|check|panic|throw)\\b",
       "name": "keyword.control.fidan"
     },
     "keyword-modifier": {
@@ -117,11 +146,15 @@
       "name": "keyword.other.modifier.fidan"
     },
     "keyword-operator": {
-      "match": "\\b(and|or|not|is|equals|notequals|lessthan|greaterthan|lessthanorequals|greaterthanorequals|mod|pow|also|set)\\b",
+      "match": "\\b(and|or|not|is|equals|notequals|lessthan|greaterthan|lessthanorequals|greaterthanorequals|mod|pow|also|set|sep)\\b",
       "name": "keyword.operator.word.fidan"
     },
     "type-builtin": {
       "match": "\\b(integer|int|float|decimal|boolean|bool|string|text|flexible|dynamic|list|map|dict|tuple|Shared|Pending|WeakShared)\\b",
+      "name": "support.type.primitive.fidan"
+    },
+    "type-conversion-call": {
+      "match": "\\b(string|integer|float|boolean|Shared|WeakShared)\\b(?=\\s*\\()",
       "name": "support.type.primitive.fidan"
     },
     "constant-language": {
