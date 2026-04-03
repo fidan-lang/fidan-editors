@@ -18,6 +18,9 @@ ehthumbs.db
 Thumbs.db
 desktop.ini
 
+# ── Build / package output ───────────────────────────────────────────────────
+/artifacts/
+
 # ── Test / benchmark output ───────────────────────────────────────────────────
 /test/output/
 *.fdn.out

@@ -2,7 +2,7 @@
   "name": "fidan",
   "displayName": "Fidan",
   "description": "Official VS Code support for Fidan with syntax highlighting, snippets, formatting, diagnostics, hover, completion, go-to-definition, references, inlay hints, and editor commands.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "publisher": "fidan",
   "license": "SEE LICENSE IN LICENSE",
   "icon": "./icons/icon_128x128.png",
@@ -440,20 +440,21 @@
   "scripts": {
     "vscode:prepublish": "npm run sync-license && npm run compile",
     "sync-license": "node -e \"require('fs').copyFileSync('../LICENSE', 'LICENSE')\"",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "lint": "eslint src --ext ts"
-  },
-  "dependencies": {
-    "vscode-languageclient": "^9.0.1"
+    "compile": "npm run typecheck && npm run bundle",
+    "watch": "node ./scripts/build.mjs --watch",
+    "lint": "eslint src --ext ts",
+    "typecheck": "tsc --noEmit -p ./",
+    "bundle": "node ./scripts/build.mjs"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
     "@types/vscode": "^1.110.0",
     "@typescript-eslint/eslint-plugin": "^8.58.0",
     "@typescript-eslint/parser": "^8.58.0",
+    "esbuild": "^0.28.0",
     "eslint": "^10.1.0",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "vscode-languageclient": "^9.0.1"
   },
   "homepage": "https://docs.fidan.dev/editors/vscode",
   "bugs": {

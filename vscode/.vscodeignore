@@ -8,7 +8,6 @@ eslint.config.cjs
 .eslint*
 tsconfig.json
 scripts/**
-node_modules/**
 package-lock.json
 out/test/**
 out/**/*.map
