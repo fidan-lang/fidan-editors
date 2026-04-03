@@ -2,8 +2,13 @@
 .vscode-test/**
 src/**
 .gitignore
-.eslintrc.json
+.gitattributes
+.vscodeignore
+eslint.config.cjs
+.eslint*
 tsconfig.json
 scripts/**
 node_modules/**
+package-lock.json
 out/test/**
+out/**/*.map
