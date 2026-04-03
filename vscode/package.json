@@ -455,7 +455,7 @@
     "eslint": "^10.1.0",
     "typescript": "^6.0.2"
   },
-  "homepage": "https://docs.fidan.dev/tools/editors/vscode",
+  "homepage": "https://docs.fidan.dev/editors/vscode",
   "bugs": {
     "url": "https://github.com/fidan-lang/fidan-editors/issues"
   }
