@@ -414,7 +414,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const config = vscode.workspace.getConfiguration("fidan");
       runCmd(
         "Fidan: Explain Diagnostic",
-        `${terminalBin(config)} explain-diag ${code.trim().toUpperCase()}`,
+        `${terminalBin(config)} explain --diagnostic ${code.trim().toUpperCase()}`,
       );
     }),
     vscode.commands.registerCommand("fidan.explainLine", async () => {
