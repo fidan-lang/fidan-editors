@@ -412,7 +412,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         return;
       }
       const config = vscode.workspace.getConfiguration("fidan");
-      runCmd("Fidan: Explain", `${terminalBin(config)} explain ${code.trim().toUpperCase()}`);
+      runCmd(
+        "Fidan: Explain Diagnostic",
+        `${terminalBin(config)} explain-diag ${code.trim().toUpperCase()}`,
+      );
     }),
     vscode.commands.registerCommand("fidan.explainLine", async () => {
       const editor = vscode.window.activeTextEditor;
@@ -428,7 +431,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const endArg = endLine > startLine ? ` --end-line ${endLine}` : "";
       runCmd(
         "Fidan: Explain",
-        `${terminalBin(config)} explain-line ${q(filePath)} --line ${startLine}${endArg}`,
+        `${terminalBin(config)} explain ${q(filePath)} --line ${startLine}${endArg}`,
       );
     }),
     vscode.commands.registerCommand("fidan.newProject", async () => {
@@ -603,4 +606,3 @@ function setStatusBarError(): void {
   statusBarItem.backgroundColor = new vscode.ThemeColor("statusBarItem.errorBackground");
   statusBarItem.tooltip = "Fidan Language Server — failed to start. Click to show output.";
 }
-

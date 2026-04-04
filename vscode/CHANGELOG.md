@@ -4,6 +4,12 @@ All notable changes to the "fidan" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [v1.0.5] - 2026-04-04
+
+- Update VS Code explain commands to use the renamed CLI:
+  - `fidan explain-diag`
+  - `fidan explain`
+
 ## [v1.0.4] - 2026-04-04
 
 - Add first-class `WeakShared(...)` constructor highlighting

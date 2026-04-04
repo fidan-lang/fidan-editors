@@ -2,7 +2,7 @@
   "name": "fidan",
   "displayName": "Fidan",
   "description": "Official VS Code support for Fidan with syntax highlighting, snippets, formatting, diagnostics, hover, completion, go-to-definition, references, inlay hints, and editor commands.",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "publisher": "fidan",
   "license": "SEE LICENSE IN LICENSE",
   "icon": "./icons/icon_128x128.png",
