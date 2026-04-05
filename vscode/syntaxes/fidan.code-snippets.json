@@ -19,6 +19,17 @@
     ],
     "description": "Declare an action with no parameters"
   },
+  "Nested action declaration": {
+    "prefix": "laction",
+    "body": [
+      "action ${1:name} with (",
+      "\tcertain ${2:param} oftype ${3:integer},",
+      ") returns ${4:nothing} {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Declare a nested local action inside the current scope"
+  },
   "Object declaration": {
     "prefix": "object",
     "body": [

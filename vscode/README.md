@@ -19,6 +19,7 @@ First-class VS Code support for the [Fidan](https://fidan.dev) programming langu
 | Inline type hints | ✅ via LSP |
 | Quick fixes / code actions | ✅ via LSP |
 | Run / Build / Test / Check / Fix from the editor | ✅ |
+| AI-assisted fix / improve / explain commands | ✅ |
 | Integrated REPL | ✅ |
 | Profiling | ✅ |
 | Sandbox mode with fine-grained permissions | ✅ |
@@ -46,13 +47,18 @@ All commands are available from the **Command Palette** (`Ctrl+Shift+P`). **Run*
 | `Fidan: Build File` | Compile to a native binary via Cranelift AOT |
 | `Fidan: Check File` | Type-check without producing output |
 | `Fidan: Fix File` | Apply auto-fixable diagnostics |
+| `Fidan: AI Fix File` | Run `fidan fix --ai` with optional steering text |
+| `Fidan: AI Improve File` | Run `fidan fix --improve` with optional steering text |
 | `Fidan: Format Current File` | Format the active file through the language server |
 | `Fidan: Run Tests in Current File` | Discover and run all `test { }` blocks |
 | `Fidan: Profile Current File` | Run with profiling instrumentation |
 | `Fidan: Open REPL` | Open a `fidan repl` session |
 | `Fidan: New Project` | Scaffold a new Fidan project |
 | `Fidan: Explain Diagnostic Code` | Look up a diagnostic code (for example `E0109`) |
-| `Fidan: Explain Current Line(s)` | Explain the selected line range |
+| `Fidan: Explain Diagnostic Code with AI` | Run `fidan explain --diagnostic ... --ai` |
+| `Fidan: Explain Selection` | Available from the editor context menu when text is selected; explains the selected line span |
+| `Fidan: Explain Current Line(s)` | Explain the current line or derive the selected line range automatically |
+| `Fidan: Explain Current Line(s) with AI` | Run `fidan explain <file> --line ... --ai` for the current line or active selection |
 | `Fidan: Restart Language Server` | Kill and restart the LSP process |
 | `Fidan: Show Language Server Output` | Open the LSP output channel |
 

@@ -15,6 +15,8 @@ let statusBarItem: vscode.StatusBarItem;
 let formatOnSaveDisposable: vscode.Disposable | undefined;
 let configWatcherDisposable: vscode.Disposable | undefined;
 
+type OptionalCliValue = true | string;
+
 function fidanBin(config: vscode.WorkspaceConfiguration): string {
   return config.get<string>("server.path") ?? "fidan";
 }
@@ -64,6 +66,11 @@ function resolveTerminalShellHint(): string | undefined {
 }
 
 async function requireActiveFidanFile(save = true): Promise<string | undefined> {
+  const editor = await requireActiveFidanEditor(save);
+  return editor?.document.uri.fsPath;
+}
+
+async function requireActiveFidanEditor(save = true): Promise<vscode.TextEditor | undefined> {
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
     vscode.window.showWarningMessage("Fidan: No active file.");
@@ -76,7 +83,7 @@ async function requireActiveFidanFile(save = true): Promise<string | undefined> 
   if (save) {
     await editor.document.save();
   }
-  return editor.document.uri.fsPath;
+  return editor;
 }
 
 function runCmd(name: string, cmd: string): void {
@@ -192,6 +199,195 @@ function buildBuildArgs(config: vscode.WorkspaceConfiguration, release: boolean)
     parts.push(`--emit ${emit}`);
   }
   return parts.length ? " " + parts.join(" ") : "";
+}
+
+function appendOptionalFlag(parts: string[], flag: string, value: OptionalCliValue | undefined): void {
+  if (value === undefined) {
+    return;
+  }
+  if (value === true) {
+    parts.push(flag);
+    return;
+  }
+  parts.push(`${flag} ${q(value)}`);
+}
+
+function buildFixCommand(
+  bin: string,
+  filePath: string,
+  options: {
+    inPlace: boolean;
+    ai?: OptionalCliValue;
+    improve?: OptionalCliValue;
+  },
+): string {
+  const parts: string[] = [q(filePath)];
+  if (options.inPlace) {
+    parts.push("--in-place");
+  }
+  appendOptionalFlag(parts, "--ai", options.ai);
+  appendOptionalFlag(parts, "--improve", options.improve);
+  return `${bin} fix ${parts.join(" ")}`;
+}
+
+function buildExplainCommand(
+  bin: string,
+  options: {
+    target?: string;
+    line?: number;
+    endLine?: number;
+    diagnostic?: string;
+    lastError?: boolean;
+    ai?: OptionalCliValue;
+  },
+): string {
+  const parts: string[] = [];
+  if (options.target) {
+    parts.push(q(options.target));
+  }
+  if (options.line !== undefined) {
+    parts.push(`--line ${options.line}`);
+  }
+  if (options.endLine !== undefined && options.line !== undefined && options.endLine > options.line) {
+    parts.push(`--end-line ${options.endLine}`);
+  }
+  if (options.diagnostic) {
+    parts.push(`--diagnostic ${options.diagnostic}`);
+  }
+  if (options.lastError) {
+    parts.push("--last-error");
+  }
+  appendOptionalFlag(parts, "--ai", options.ai);
+  return `${bin} explain ${parts.join(" ")}`;
+}
+
+function getExplainSelectionRange(editor: vscode.TextEditor): { line: number; endLine?: number } {
+  const { document, selection } = editor;
+  const startLine = selection.start.line + 1;
+
+  if (selection.isEmpty) {
+    return { line: startLine };
+  }
+
+  let inclusiveEndLine = selection.end.line + 1;
+  if (
+    selection.end.character === 0 &&
+    selection.end.line > selection.start.line
+  ) {
+    inclusiveEndLine -= 1;
+  }
+
+  const maxLine = document.lineCount;
+  const endLine = Math.min(Math.max(inclusiveEndLine, startLine), maxLine);
+  return endLine > startLine ? { line: startLine, endLine } : { line: startLine };
+}
+
+function formatExplainRange(range: { line: number; endLine?: number }): string {
+  return range.endLine !== undefined ? `lines ${range.line}-${range.endLine}` : `line ${range.line}`;
+}
+
+async function runExplainForEditor(
+  editor: vscode.TextEditor,
+  config: vscode.WorkspaceConfiguration,
+  options: {
+    terminalName: string;
+    ai?: OptionalCliValue;
+    requireSelection?: boolean;
+  },
+): Promise<void> {
+  if (options.requireSelection && editor.selection.isEmpty) {
+    vscode.window.showWarningMessage("Fidan: Select some code first.");
+    return;
+  }
+
+  const filePath = editor.document.uri.fsPath;
+  const range = getExplainSelectionRange(editor);
+  const span = formatExplainRange(range);
+  const mode = options.ai !== undefined ? "AI explaining" : "Explaining";
+  vscode.window.setStatusBarMessage(`Fidan: ${mode} ${span}`, 3000);
+
+  runCmd(
+    options.terminalName,
+    buildExplainCommand(terminalBin(config), {
+      target: filePath,
+      line: range.line,
+      endLine: range.endLine,
+      ai: options.ai,
+    }),
+  );
+}
+
+async function pickPreviewOrApply(title: string, applyLabel: string, previewLabel: string): Promise<boolean | undefined> {
+  const pick = await vscode.window.showQuickPick(
+    [
+      {
+        label: applyLabel,
+        detail: "Write changes back to the file",
+        inPlace: true,
+      },
+      {
+        label: previewLabel,
+        detail: "Print the proposed changes to the terminal without rewriting the file",
+        inPlace: false,
+      },
+    ],
+    { title, placeHolder: "Select whether to apply or preview the result" },
+  );
+  return pick?.inPlace;
+}
+
+async function promptOptionalSteering(
+  title: string,
+  prompt: string,
+  placeHolder: string,
+): Promise<OptionalCliValue | undefined> {
+  const value = await vscode.window.showInputBox({
+    title,
+    prompt,
+    placeHolder,
+    ignoreFocusOut: true,
+  });
+  if (value === undefined) {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : true;
+}
+
+async function runAiFixLikeCommand(
+  kind: "ai" | "improve",
+  filePath: string,
+  config: vscode.WorkspaceConfiguration,
+): Promise<void> {
+  const title = kind === "ai" ? "Fidan: AI Fix File" : "Fidan: AI Improve File";
+  const inPlace = await pickPreviewOrApply(
+    title,
+    kind === "ai" ? "$(sparkle) Apply AI-assisted fixes" : "$(sparkle) Apply AI improvements",
+    kind === "ai" ? "$(eye) Preview AI-assisted fixes" : "$(eye) Preview AI improvements",
+  );
+  if (inPlace === undefined) {
+    return;
+  }
+
+  const steering = await promptOptionalSteering(
+    title,
+    kind === "ai"
+      ? "Optional: add steering text for the AI fix pass. Leave empty to use the default AI behavior."
+      : "Optional: describe the kind of improvement you want. Leave empty to use the default AI behavior.",
+    kind === "ai" ? "prefer idiomatic style" : "refactor for readability",
+  );
+  if (steering === undefined) {
+    return;
+  }
+
+  runCmd(
+    kind === "ai" ? "Fidan: AI Fix" : "Fidan: AI Improve",
+    buildFixCommand(terminalBin(config), filePath, {
+      inPlace,
+      ai: kind === "ai" ? steering : undefined,
+      improve: kind === "improve" ? steering : undefined,
+    }),
+  );
 }
 
 function traceLevelFromSetting(setting: string): Trace {
@@ -342,16 +538,32 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const config = vscode.workspace.getConfiguration("fidan");
       const pick = await vscode.window.showQuickPick(
         [
-          { label: "$(tools) Apply fixes", detail: "Rewrite the file in place", dryRun: false },
-          { label: "$(eye) Dry run (preview only)", detail: "Show what would change", dryRun: true },
+          { label: "$(tools) Apply fixes", detail: "Rewrite the file in place", inPlace: true },
+          { label: "$(eye) Preview fixes", detail: "Show the proposed changes in the terminal", inPlace: false },
         ],
         { title: "Fidan: Fix File", placeHolder: "Select fix mode" },
       );
       if (!pick) {
         return;
       }
-      const dryRunArg = pick.dryRun ? " --dry-run" : "";
-      runCmd("Fidan: Fix", `${terminalBin(config)} fix${dryRunArg} ${q(filePath)}`);
+      runCmd(
+        "Fidan: Fix",
+        buildFixCommand(terminalBin(config), filePath, { inPlace: pick.inPlace }),
+      );
+    }),
+    vscode.commands.registerCommand("fidan.aiFixFile", async () => {
+      const filePath = await requireActiveFidanFile();
+      if (!filePath) {
+        return;
+      }
+      await runAiFixLikeCommand("ai", filePath, vscode.workspace.getConfiguration("fidan"));
+    }),
+    vscode.commands.registerCommand("fidan.improveFile", async () => {
+      const filePath = await requireActiveFidanFile();
+      if (!filePath) {
+        return;
+      }
+      await runAiFixLikeCommand("improve", filePath, vscode.workspace.getConfiguration("fidan"));
     }),
     vscode.commands.registerCommand("fidan.formatFile", async () => {
       await vscode.commands.executeCommand("editor.action.formatDocument");
@@ -414,25 +626,77 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const config = vscode.workspace.getConfiguration("fidan");
       runCmd(
         "Fidan: Explain Diagnostic",
-        `${terminalBin(config)} explain --diagnostic ${code.trim().toUpperCase()}`,
+        buildExplainCommand(terminalBin(config), {
+          diagnostic: code.trim().toUpperCase(),
+        }),
       );
     }),
-    vscode.commands.registerCommand("fidan.explainLine", async () => {
-      const editor = vscode.window.activeTextEditor;
-      if (!editor || editor.document.languageId !== "fidan") {
-        vscode.window.showWarningMessage("Fidan: Open a .fdn file first.");
+    vscode.commands.registerCommand("fidan.aiExplainCode", async () => {
+      const code = await vscode.window.showInputBox({
+        title: "Fidan: Explain Diagnostic Code with AI",
+        prompt: "Enter a Fidan diagnostic code",
+        placeHolder: "E0101",
+        validateInput: value =>
+          /^[EWR]\d{4}$/i.test(value.trim())
+            ? undefined
+            : "Format must be like E0101, W1005, or R2001",
+      });
+      if (!code) {
         return;
       }
-      await editor.document.save();
-      const filePath = editor.document.uri.fsPath;
-      const startLine = editor.selection.start.line + 1;
-      const endLine = editor.selection.end.line + 1;
-      const config = vscode.workspace.getConfiguration("fidan");
-      const endArg = endLine > startLine ? ` --end-line ${endLine}` : "";
-      runCmd(
-        "Fidan: Explain",
-        `${terminalBin(config)} explain ${q(filePath)} --line ${startLine}${endArg}`,
+      const steering = await promptOptionalSteering(
+        "Fidan: Explain Diagnostic Code with AI",
+        "Optional: add steering text for the AI explanation. Leave empty to use the default AI behavior.",
+        "focus on practical fixes",
       );
+      if (steering === undefined) {
+        return;
+      }
+      const config = vscode.workspace.getConfiguration("fidan");
+      runCmd(
+        "Fidan: AI Explain Diagnostic",
+        buildExplainCommand(terminalBin(config), {
+          diagnostic: code.trim().toUpperCase(),
+          ai: steering,
+        }),
+      );
+    }),
+    vscode.commands.registerCommand("fidan.explainSelection", async () => {
+      const editor = await requireActiveFidanEditor();
+      if (!editor) {
+        return;
+      }
+      await runExplainForEditor(editor, vscode.workspace.getConfiguration("fidan"), {
+        terminalName: "Fidan: Explain",
+        requireSelection: true,
+      });
+    }),
+    vscode.commands.registerCommand("fidan.explainLine", async () => {
+      const editor = await requireActiveFidanEditor();
+      if (!editor) {
+        return;
+      }
+      await runExplainForEditor(editor, vscode.workspace.getConfiguration("fidan"), {
+        terminalName: "Fidan: Explain",
+      });
+    }),
+    vscode.commands.registerCommand("fidan.aiExplainLine", async () => {
+      const editor = await requireActiveFidanEditor();
+      if (!editor) {
+        return;
+      }
+      const steering = await promptOptionalSteering(
+        "Fidan: Explain Current Line(s) with AI",
+        "Optional: add steering text for the AI explanation. Leave empty to use the default AI behavior.",
+        "focus on compiler/runtime behavior",
+      );
+      if (steering === undefined) {
+        return;
+      }
+      await runExplainForEditor(editor, vscode.workspace.getConfiguration("fidan"), {
+        terminalName: "Fidan: AI Explain",
+        ai: steering,
+      });
     }),
     vscode.commands.registerCommand("fidan.newProject", async () => {
       const name = await vscode.window.showInputBox({

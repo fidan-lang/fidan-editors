@@ -1,8 +1,8 @@
 {
   "name": "fidan",
   "displayName": "Fidan",
-  "description": "Official VS Code support for Fidan with syntax highlighting, snippets, formatting, diagnostics, hover, completion, go-to-definition, references, inlay hints, and editor commands.",
-  "version": "1.0.6",
+  "description": "Official VS Code support for Fidan with syntax highlighting, snippets, LSP-powered tooling, and AI-assisted fix, improve, and explain commands.",
+  "version": "1.0.7",
   "publisher": "fidan",
   "license": "SEE LICENSE IN LICENSE",
   "icon": "./icons/icon_128x128.png",
@@ -327,6 +327,14 @@
         "title": "Fidan: Fix File"
       },
       {
+        "command": "fidan.aiFixFile",
+        "title": "Fidan: AI Fix File"
+      },
+      {
+        "command": "fidan.improveFile",
+        "title": "Fidan: AI Improve File"
+      },
+      {
         "command": "fidan.formatFile",
         "title": "Fidan: Format Current File"
       },
@@ -348,8 +356,20 @@
         "title": "Fidan: Explain Diagnostic Code"
       },
       {
+        "command": "fidan.aiExplainCode",
+        "title": "Fidan: Explain Diagnostic Code with AI"
+      },
+      {
+        "command": "fidan.explainSelection",
+        "title": "Fidan: Explain Selection"
+      },
+      {
         "command": "fidan.explainLine",
         "title": "Fidan: Explain Current Line(s)"
+      },
+      {
+        "command": "fidan.aiExplainLine",
+        "title": "Fidan: Explain Current Line(s) with AI"
       },
       {
         "command": "fidan.newProject",
@@ -395,9 +415,29 @@
           "group": "fidan@5"
         },
         {
+          "command": "fidan.aiFixFile",
+          "when": "resourceLangId == fidan",
+          "group": "fidan@5"
+        },
+        {
+          "command": "fidan.improveFile",
+          "when": "resourceLangId == fidan",
+          "group": "fidan@5"
+        },
+        {
+          "command": "fidan.explainSelection",
+          "when": "resourceLangId == fidan && editorHasSelection",
+          "group": "fidan@6"
+        },
+        {
           "command": "fidan.explainLine",
           "when": "resourceLangId == fidan",
-          "group": "fidan@6"
+          "group": "fidan@7"
+        },
+        {
+          "command": "fidan.aiExplainLine",
+          "when": "resourceLangId == fidan",
+          "group": "fidan@7"
         }
       ],
       "explorer/context": [
@@ -420,6 +460,16 @@
           "command": "fidan.fixFile",
           "when": "resourceLangId == fidan",
           "group": "fidan@4"
+        },
+        {
+          "command": "fidan.aiFixFile",
+          "when": "resourceLangId == fidan",
+          "group": "fidan@5"
+        },
+        {
+          "command": "fidan.improveFile",
+          "when": "resourceLangId == fidan",
+          "group": "fidan@6"
         }
       ]
     },
