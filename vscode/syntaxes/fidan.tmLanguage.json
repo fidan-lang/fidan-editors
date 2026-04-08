@@ -114,11 +114,13 @@
         { "include": "#line-comment" },
         { "include": "#raw-string" },
         { "include": "#string" },
+        { "include": "#string-escape" },
         { "include": "#number" },
         { "include": "#keyword-control" },
         { "include": "#keyword-operator" },
         { "include": "#type-builtin" },
         { "include": "#constant-language" },
+        { "include": "#function-call" },
         { "include": "#operator-symbolic" },
         { "include": "#identifier" }
       ]

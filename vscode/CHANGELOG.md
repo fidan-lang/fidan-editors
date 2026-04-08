@@ -12,9 +12,16 @@ compiler releases.
 
 ---
 
+## [v1.0.9] - 2026-04-04
+
+- Update [`TextMate`](./syntaxes/fidan.tmLanguage.json) grammar to better understand nested string interpolation
+- Update dependencies in [`package.json`](./package.json) to latest versions
+
+---
+
 ## [v1.0.8] - 2026-04-04
 
-- Update `TextMate` grammar to support the latest syntax changes in Fidan
+- Update [`TextMate`](./syntaxes/fidan.tmLanguage.json) grammar to support the latest syntax changes in Fidan
 
 ---
 
@@ -69,7 +76,8 @@ compiler releases.
 
 - Initial release
 
-[Unreleased]: https://github.com/fidan-lang/fidan-editors/compare/v1.0.8...HEAD
+[Unreleased]: https://github.com/fidan-lang/fidan-editors/compare/v1.0.9...HEAD
+[v1.0.9]: https://github.com/fidan-lang/fidan-editors/compare/v1.0.8...v1.0.9
 [v1.0.8]: https://github.com/fidan-lang/fidan-editors/compare/v1.0.7...v1.0.8
 [v1.0.7]: https://github.com/fidan-lang/fidan-editors/compare/v1.0.6...v1.0.7
 [v1.0.6]: https://github.com/fidan-lang/fidan-editors/compare/v1.0.5...v1.0.6
