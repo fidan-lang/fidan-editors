@@ -1,4 +1,3 @@
-import * as path from "path";
 import * as vscode from "vscode";
 import {
   LanguageClient,
@@ -122,8 +121,8 @@ function buildRunCommand(
     args.push(`--jit-threshold ${jit}`);
   }
 
-  const maxErrors = config.get<number>("run.maxErrors") ?? 0;
-  if (maxErrors > 0) {
+  const maxErrors = config.get<number>("run.maxErrors") ?? 1;
+  if (maxErrors !== 1) {
     args.push(`--max-errors ${maxErrors}`);
   }
 
@@ -149,12 +148,6 @@ function buildRunCommand(
     }
     if (config.get<boolean>("run.sandbox.allowEnv") ?? false) {
       args.push("--allow-env");
-    }
-    if (config.get<boolean>("run.sandbox.allowNet") ?? false) {
-      args.push("--allow-net");
-    }
-    if (config.get<boolean>("run.sandbox.allowSpawn") ?? false) {
-      args.push("--allow-spawn");
     }
     const timeLimit = config.get<number>("run.sandbox.timeLimit") ?? 0;
     if (timeLimit > 0) {
@@ -631,36 +624,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         }),
       );
     }),
-    vscode.commands.registerCommand("fidan.aiExplainCode", async () => {
-      const code = await vscode.window.showInputBox({
-        title: "Fidan: Explain Diagnostic Code with AI",
-        prompt: "Enter a Fidan diagnostic code",
-        placeHolder: "E0101",
-        validateInput: value =>
-          /^[EWR]\d{4}$/i.test(value.trim())
-            ? undefined
-            : "Format must be like E0101, W1005, or R2001",
-      });
-      if (!code) {
-        return;
-      }
-      const steering = await promptOptionalSteering(
-        "Fidan: Explain Diagnostic Code with AI",
-        "Optional: add steering text for the AI explanation. Leave empty to use the default AI behavior.",
-        "focus on practical fixes",
-      );
-      if (steering === undefined) {
-        return;
-      }
-      const config = vscode.workspace.getConfiguration("fidan");
-      runCmd(
-        "Fidan: AI Explain Diagnostic",
-        buildExplainCommand(terminalBin(config), {
-          diagnostic: code.trim().toUpperCase(),
-          ai: steering,
-        }),
-      );
-    }),
     vscode.commands.registerCommand("fidan.explainSelection", async () => {
       const editor = await requireActiveFidanEditor();
       if (!editor) {
@@ -718,29 +681,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const dir = folderUris?.[0]?.fsPath;
       const dirArg = dir ? ` --dir ${q(dir)}` : "";
       const config = vscode.workspace.getConfiguration("fidan");
-      runCmd("Fidan: New", `${terminalBin(config)} new ${name.trim()}${dirArg}`);
-      if (dir) {
-        const projectPath = path.join(dir, name.trim());
-        const choice = await vscode.window.showInformationMessage(
-          `Project '${name.trim()}' created at ${projectPath}`,
-          "Open Folder",
-        );
-        if (choice === "Open Folder") {
-          void vscode.commands.executeCommand(
-            "vscode.openFolder",
-            vscode.Uri.file(projectPath),
-            { forceNewWindow: false },
-          );
-        }
-      }
+      runCmd("Fidan: New", `${terminalBin(config)} new ${q(name.trim())}${dirArg}`);
     }),
     vscode.commands.registerCommand("fidan.openRepl", () => {
       const config = vscode.workspace.getConfiguration("fidan");
       const trace = config.get<string>("run.trace") ?? "none";
-      const traceArg = trace !== "none" ? ` --trace ${trace}` : "";
       const terminal = vscode.window.createTerminal("Fidan: REPL");
       terminal.show();
-      terminal.sendText(`${terminalBin(config)} repl${traceArg}`);
+      terminal.sendText(`${terminalBin(config)} repl --trace ${trace}`);
     }),
   );
 

@@ -19,24 +19,29 @@ cd fidan-editors
 
 ```bash
 cd vscode
-npm install
+npm ci
 ```
 
-### 3. Compile the extension
+### 3. Lint and compile the extension
 
 ```bash
+npm run lint
 npm run compile
 ```
 
 Press **F5** in VS Code (with this workspace open) to launch the **Extension Development Host** and test the extension live.
 
-### 4. Run tests
+### 4. Validate compatibility and packaging
+
+There is no automated Extension Development Host test suite. Run the focused CLI compatibility regression check, then validate the actual package from `vscode/`:
 
 ```bash
-npm test
+node scripts/check-compatibility.mjs
+# Create ../artifacts if needed.
+npx @vscode/vsce package --out ../artifacts/fidan-1.0.10.vsix
 ```
 
-Before submitting a pull request, make sure the project compiles cleanly and all relevant tests pass.
+Inspect the VSIX contents and exercise changed editor commands in the Extension Development Host before release.
 
 ---
 
@@ -115,6 +120,8 @@ Before submitting a pull request, run:
 
 ```bash
 cd vscode
+npm ci
+npm run lint
 npm run compile
 ```
 
