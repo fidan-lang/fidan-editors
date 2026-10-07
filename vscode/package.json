@@ -2,7 +2,7 @@
   "name": "fidan",
   "displayName": "Fidan",
   "description": "Official VS Code support for Fidan with syntax highlighting, snippets, LSP-powered tooling, and AI-assisted fix, improve, and explain commands.",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "publisher": "fidan",
   "license": "SEE LICENSE IN LICENSE",
   "icon": "./icons/icon_128x128.png",
@@ -17,7 +17,6 @@
     "Programming Languages",
     "Formatters",
     "Linters",
-    "Debuggers",
     "Snippets"
   ],
   "keywords": [
@@ -172,7 +171,7 @@
         "fidan.run.sandbox": {
           "type": "boolean",
           "default": false,
-          "description": "Pass `--sandbox` to `fidan run` (deny all file/env/net access by default)."
+          "description": "Pass `--sandbox` to `fidan run` (deny file and environment access by default)."
         },
         "fidan.run.sandbox.allowRead": {
           "type": "array",
@@ -194,16 +193,6 @@
           "type": "boolean",
           "default": false,
           "description": "Pass `--allow-env` when `fidan.run.sandbox` is enabled."
-        },
-        "fidan.run.sandbox.allowNet": {
-          "type": "boolean",
-          "default": false,
-          "description": "Pass `--allow-net` when `fidan.run.sandbox` is enabled."
-        },
-        "fidan.run.sandbox.allowSpawn": {
-          "type": "boolean",
-          "default": false,
-          "description": "Pass `--allow-spawn` when `fidan.run.sandbox` is enabled."
         },
         "fidan.run.sandbox.timeLimit": {
           "type": "number",
@@ -246,8 +235,9 @@
         },
         "fidan.run.maxErrors": {
           "type": "number",
-          "default": 0,
-          "description": "Stop after this many errors in `fidan run`. 0 = no limit."
+          "default": 1,
+          "description": "Stop after this many errors in `fidan run`. Defaults to 1; 0 = no limit.",
+          "minimum": 0
         },
         "fidan.check.strict": {
           "type": "boolean",
@@ -285,11 +275,12 @@
               "tokens",
               "ast",
               "hir",
-              "mir"
+              "mir",
+              "obj"
             ]
           },
           "default": [],
-          "description": "Emit intermediate representations during `fidan build`."
+          "description": "Emit tokens, AST, HIR, MIR or object output during `fidan build`."
         },
         "fidan.profile.outputFile": {
           "type": "string",
@@ -354,10 +345,6 @@
       {
         "command": "fidan.explainCode",
         "title": "Fidan: Explain Diagnostic Code"
-      },
-      {
-        "command": "fidan.aiExplainCode",
-        "title": "Fidan: Explain Diagnostic Code with AI"
       },
       {
         "command": "fidan.explainSelection",
@@ -488,13 +475,14 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run sync-license && npm run compile",
+    "vscode:prepublish": "npm run sync-license && npm run sync-notice && npm run compile",
     "sync-license": "node -e \"require('fs').copyFileSync('../LICENSE', 'LICENSE')\"",
     "compile": "npm run typecheck && npm run bundle",
     "watch": "node ./scripts/build.mjs --watch",
     "lint": "eslint src --ext ts",
     "typecheck": "tsc --noEmit -p ./",
-    "bundle": "node ./scripts/build.mjs"
+    "bundle": "node ./scripts/build.mjs",
+    "sync-notice": "node -e \"require('fs').copyFileSync('../NOTICE', 'NOTICE')\""
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
@@ -509,5 +497,8 @@
   "homepage": "https://docs.fidan.dev/editors/vscode",
   "bugs": {
     "url": "https://github.com/fidan-lang/fidan-editors/issues"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
   }
 }

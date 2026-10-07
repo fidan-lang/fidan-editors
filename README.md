@@ -75,13 +75,13 @@ ext install fidan.fidan
    ```bash
    git clone https://github.com/fidan-lang/fidan-editors
    cd fidan-editors/vscode
-   npm install
+   npm ci
    npm run compile
    ```
 
    Press **F5** in VS Code to launch the Extension Development Host.
 
-> **Requirement:** The `fidan` binary must be on your `PATH`, or configure `fidan.server.path` to point to it explicitly.
+> **Compatibility target:** Fidan CLI 1.0.16. Normal editing and LSP features require only the `fidan` binary on your `PATH`, or an explicit `fidan.server.path`. AI-assisted commands additionally require a compatible `ai-analysis` toolchain and provider configuration; AI setup is optional for normal editing.
 
 ---
 
@@ -97,7 +97,7 @@ var greeting = "hello"
 var ratio = 3.14
 var flag = true
 var nothingVal = nothing
-var d = dynamic
+var d oftype dynamic = 42
 ```
 
 #### Actions (functions)
@@ -239,16 +239,20 @@ All commands are reachable via the **Command Palette** (`Ctrl+Shift+P`). **Run**
 | Command | Description |
 |---|---|
 | `Fidan: Run Current File` | Run the active `.fdn` file in an integrated terminal |
-| `Fidan: Build File` | Compile to a native binary via Cranelift AOT |
+| `Fidan: Build File` | Compile to a native binary using the selected available AOT backend |
 | `Fidan: Check File` | Type-check without producing output |
 | `Fidan: Fix File` | Apply auto-fixable diagnostics |
+| `Fidan: AI Fix File` | Run `fidan fix --ai` with optional steering text |
+| `Fidan: AI Improve File` | Run `fidan fix --improve` with optional steering text |
 | `Fidan: Format Current File` | Format the active file through the language server |
 | `Fidan: Run Tests in Current File` | Discover and run all `test { }` blocks |
 | `Fidan: Profile Current File` | Run with profiling instrumentation |
 | `Fidan: Open REPL` | Open a `fidan repl` session |
-| `Fidan: New Project` | Scaffold a new Fidan project |
+| `Fidan: New Project` | Send the scaffold command to the terminal; inspect its output for success |
 | `Fidan: Explain Diagnostic Code` | Look up a diagnostic code (for example `E0109`) |
-| `Fidan: Explain Current Line(s)` | Explain the selected line range |
+| `Fidan: Explain Selection` | Explain the selected line span from the editor context menu |
+| `Fidan: Explain Current Line(s)` | Explain the current line or active selection |
+| `Fidan: Explain Current Line(s) with AI` | AI-assisted source explanation for the current line or active selection |
 | `Fidan: Restart Language Server` | Kill and restart the LSP process |
 | `Fidan: Show Language Server Output` | Open the LSP output channel |
 
@@ -283,15 +287,15 @@ All settings live under the `fidan.*` namespace in VS Code.
 | `fidan.run.terminalName` | `"Fidan"` | Name of the integrated terminal |
 | `fidan.run.reload` | `false` | Pass `--reload` (watch and re-run on change) |
 | `fidan.run.strict` | `false` | Treat select warnings as errors |
-| `fidan.run.trace` | `"none"` | Panic stack-trace mode: `none` \| `short` \| `full` \| `compact` |
+| `fidan.run.trace` | `"none"` | Run and REPL stack-trace mode: `none` \| `short` \| `full` \| `compact`; REPL always receives the selected mode |
 | `fidan.run.jitThreshold` | `500` | Cranelift JIT call threshold (`0` = disable JIT) |
 | `fidan.run.suppress` | `[]` | Diagnostic codes to suppress |
 | `fidan.run.emit` | `[]` | Emit intermediate IRs: `tokens` \| `ast` \| `hir` \| `mir` |
-| `fidan.run.maxErrors` | `0` | Stop after N errors (`0` = no limit) |
+| `fidan.run.maxErrors` | `1` | Stop after N errors (`0` = no limit; passed explicitly) |
 
 #### Sandbox
 
-When `fidan.run.sandbox` is `true`, file/env/net/spawn access is denied by default. Grant permissions individually:
+When `fidan.run.sandbox` is `true`, file and environment access is denied by default. Grant permissions individually:
 
 | Setting | Default | Description |
 |---|---|---|
@@ -299,8 +303,6 @@ When `fidan.run.sandbox` is `true`, file/env/net/spawn access is denied by defau
 | `fidan.run.sandbox.allowRead` | `[]` | Allowed read path prefixes (`["*"]` = all) |
 | `fidan.run.sandbox.allowWrite` | `[]` | Allowed write path prefixes |
 | `fidan.run.sandbox.allowEnv` | `false` | Allow environment variable access |
-| `fidan.run.sandbox.allowNet` | `false` | Allow network access |
-| `fidan.run.sandbox.allowSpawn` | `false` | Allow spawning child processes |
 | `fidan.run.sandbox.timeLimit` | `0` | Wall-time limit in seconds (`0` = none) |
 | `fidan.run.sandbox.memLimit` | `0` | Memory limit in MB (`0` = none) |
 
@@ -318,7 +320,7 @@ When `fidan.run.sandbox` is `true`, file/env/net/spawn access is denied by defau
 |---|---|---|
 | `fidan.build.release` | `false` | Build in release mode |
 | `fidan.build.outputPath` | `""` | Output binary path (empty = default `out/`) |
-| `fidan.build.emit` | `[]` | Emit intermediate IRs during build |
+| `fidan.build.emit` | `[]` | Emit `tokens` \| `ast` \| `hir` \| `mir` \| `obj` during build (`obj` is build-only) |
 | `fidan.profile.outputFile` | `""` | Write profiling data to a JSON file |
 
 ---
@@ -331,7 +333,7 @@ git clone https://github.com/fidan-lang/fidan-editors
 cd fidan-editors/vscode
 
 # Install dependencies
-npm install
+npm ci
 
 # Compile TypeScript
 npm run compile
@@ -356,7 +358,7 @@ Security issues should be reported in accordance with [SECURITY.md](SECURITY.md)
 
 This extension is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) for the full text.
 
-Additional terms apply regarding trademark use and commercial distribution of the Fidan language itself; see [NOTICE](NOTICE).
+Commercial software use, distribution and sale are permitted under the license. Additional restrictions concern Fidan trademarks/branding and false official affiliation; see [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 Copyright © 2026 Kaan Gönüldinc (AppSolves). All rights reserved.
 **Fidan™** is a trademark of Kaan Gönüldinc (AppSolves).

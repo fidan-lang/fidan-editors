@@ -26,7 +26,7 @@ First-class VS Code support for the [Fidan](https://fidan.dev) programming langu
 
 ## Requirements
 
-The `fidan` binary must be on your `PATH`, or point the extension at it via `fidan.server.path`.
+Compatibility target: **Fidan CLI 1.0.16**. Normal editing and LSP features require only the `fidan` binary on your `PATH`, or an explicit `fidan.server.path`. AI-assisted commands additionally require a compatible `ai-analysis` toolchain and provider configuration; AI setup is optional for normal editing.
 
 Build from source:
 
@@ -44,7 +44,7 @@ All commands are available from the **Command Palette** (`Ctrl+Shift+P`). **Run*
 | Command | Description |
 |---|---|
 | `Fidan: Run Current File` | Run the active `.fdn` file in an integrated terminal |
-| `Fidan: Build File` | Compile to a native binary via Cranelift AOT |
+| `Fidan: Build File` | Compile to a native binary using the selected available AOT backend |
 | `Fidan: Check File` | Type-check without producing output |
 | `Fidan: Fix File` | Apply auto-fixable diagnostics |
 | `Fidan: AI Fix File` | Run `fidan fix --ai` with optional steering text |
@@ -53,9 +53,8 @@ All commands are available from the **Command Palette** (`Ctrl+Shift+P`). **Run*
 | `Fidan: Run Tests in Current File` | Discover and run all `test { }` blocks |
 | `Fidan: Profile Current File` | Run with profiling instrumentation |
 | `Fidan: Open REPL` | Open a `fidan repl` session |
-| `Fidan: New Project` | Scaffold a new Fidan project |
+| `Fidan: New Project` | Send the scaffold command to the terminal; inspect its output for success |
 | `Fidan: Explain Diagnostic Code` | Look up a diagnostic code (for example `E0109`) |
-| `Fidan: Explain Diagnostic Code with AI` | Run `fidan explain --diagnostic ... --ai` |
 | `Fidan: Explain Selection` | Available from the editor context menu when text is selected; explains the selected line span |
 | `Fidan: Explain Current Line(s)` | Explain the current line or derive the selected line range automatically |
 | `Fidan: Explain Current Line(s) with AI` | Run `fidan explain <file> --line ... --ai` for the current line or active selection |
@@ -89,15 +88,15 @@ All commands are available from the **Command Palette** (`Ctrl+Shift+P`). **Run*
 | `fidan.run.terminalName` | `"Fidan"` | Name of the integrated terminal |
 | `fidan.run.reload` | `false` | Pass `--reload` (watch and re-run on change) |
 | `fidan.run.strict` | `false` | Treat select warnings as errors |
-| `fidan.run.trace` | `"none"` | Panic stack-trace mode: `none` \| `short` \| `full` \| `compact` |
+| `fidan.run.trace` | `"none"` | Run and REPL stack-trace mode: `none` \| `short` \| `full` \| `compact`; REPL always receives the selected mode |
 | `fidan.run.jitThreshold` | `500` | Cranelift JIT call threshold (`0` = disable JIT) |
 | `fidan.run.suppress` | `[]` | Diagnostic codes to suppress |
 | `fidan.run.emit` | `[]` | Emit intermediate IRs: `tokens` \| `ast` \| `hir` \| `mir` |
-| `fidan.run.maxErrors` | `0` | Stop after N errors (`0` = no limit) |
+| `fidan.run.maxErrors` | `1` | Stop after N errors (`0` = no limit; passed explicitly) |
 
 ### Sandbox
 
-When `fidan.run.sandbox` is `true`, file/env/net/spawn access is denied by default. Grant permissions individually:
+When `fidan.run.sandbox` is `true`, file and environment access is denied by default. Grant permissions individually:
 
 | Setting | Default | Description |
 |---|---|---|
@@ -105,8 +104,6 @@ When `fidan.run.sandbox` is `true`, file/env/net/spawn access is denied by defau
 | `fidan.run.sandbox.allowRead` | `[]` | Allowed read path prefixes (`["*"]` = all) |
 | `fidan.run.sandbox.allowWrite` | `[]` | Allowed write path prefixes |
 | `fidan.run.sandbox.allowEnv` | `false` | Allow environment variable access |
-| `fidan.run.sandbox.allowNet` | `false` | Allow network access |
-| `fidan.run.sandbox.allowSpawn` | `false` | Allow spawning child processes |
 | `fidan.run.sandbox.timeLimit` | `0` | Wall-time limit in seconds (`0` = none) |
 | `fidan.run.sandbox.memLimit` | `0` | Memory limit in MB (`0` = none) |
 
@@ -124,14 +121,14 @@ When `fidan.run.sandbox` is `true`, file/env/net/spawn access is denied by defau
 |---|---|---|
 | `fidan.build.release` | `false` | Build in release mode |
 | `fidan.build.outputPath` | `""` | Output binary path (empty = default `out/`) |
-| `fidan.build.emit` | `[]` | Emit intermediate IRs during build |
+| `fidan.build.emit` | `[]` | Emit `tokens` \| `ast` \| `hir` \| `mir` \| `obj` during build (`obj` is build-only) |
 | `fidan.profile.outputFile` | `""` | Write profiling data to a JSON file |
 
 ## License
 
 Licensed under the **Apache License 2.0** — see [LICENSE](LICENSE) for the full text.
 
-Additional terms apply regarding trademark use and commercial distribution of the Fidan language; see [NOTICE](NOTICE).
+Commercial software use, distribution and sale are permitted under the license. Additional restrictions concern Fidan trademarks/branding and false official affiliation; see [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 Copyright © 2026 Kaan Gönüldinc (AppSolves). All rights reserved.  
 **Fidan™** is a trademark of Kaan Gönüldinc (AppSolves).

@@ -152,7 +152,7 @@
       "name": "keyword.operator.word.fidan"
     },
     "type-builtin": {
-      "match": "\\b(integer|int|float|decimal|boolean|bool|string|text|flexible|dynamic|list|map|dict|tuple|handle|Shared|Pending|WeakShared)\\b",
+      "match": "\\b(integer|int|float|decimal|boolean|bool|string|text|flexible|dynamic|list|map|dict|hashset|tuple|handle|Shared|Pending|WeakShared)\\b",
       "name": "support.type.primitive.fidan"
     },
     "type-conversion-call": {
