@@ -38,3 +38,5 @@ flamegraph.svg
 *~
 .env
 .env.*
+
+/target/

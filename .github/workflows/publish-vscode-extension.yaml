@@ -30,6 +30,8 @@ jobs:
     steps:
       - name: Checkout editor repo
         uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag_name || github.ref }}
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -43,12 +45,10 @@ jobs:
 
       - name: Resolve release tag and version
         shell: bash
+        env:
+          REQUESTED_TAG: ${{ inputs.tag_name || github.ref_name }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            tag_name='${{ inputs.tag_name }}'
-          else
-            tag_name='${{ github.ref_name }}'
-          fi
+          tag_name="$REQUESTED_TAG"
 
           if [[ ! "$tag_name" =~ ^vscode/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Tag must look like vscode/v1.0.0. Got: $tag_name" >&2
@@ -67,6 +67,17 @@ jobs:
 
       - name: Lint extension
         run: npm run lint
+
+      - name: Setup current released Fidan for real compatibility checks
+        id: fidan
+        uses: fidan-lang/fidan-actions/setup@v1
+        with:
+          version: latest
+
+      - name: Compatibility regression check
+        run: npm run check:compatibility
+        env:
+          FIDAN_BIN: ${{ steps.fidan.outputs.fidan-bin }}
 
       - name: Compile extension
         run: npm run compile

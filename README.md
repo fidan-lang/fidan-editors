@@ -362,3 +362,9 @@ Commercial software use, distribution and sale are permitted under the license. 
 
 Copyright © 2026 Kaan Gönüldinc (AppSolves). All rights reserved.
 **Fidan™** is a trademark of Kaan Gönüldinc (AppSolves).
+
+## Dal audit compatibility gate
+
+The local audit includes literal terminal quoting, CLI-option ordering, effective sandbox policy, and a real LSP initialize exchange. Run `FIDAN_BIN=/path/to/approved/candidate/fidan npm run check:compatibility` from `vscode/` (set the environment variable using your shell). Without FIDAN_BIN, the same check runs only the VM-based builder/metadata regressions.
+
+The verification workflow has a manual Windows/Linux/macOS candidate job taking an explicit compiler ref. The publish workflow also requires the checks against the current released CLI. Published Fidan1.0.16 has the environment-sandbox bypass detected by this audit: release the approved compiler fix before publishing the corresponding extension maintenance update. No compiler, helper or extension version is selected or published by this audit.

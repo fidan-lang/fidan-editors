@@ -64,9 +64,9 @@ for (const doc of ['README.md', '../README.md']) {
 for (const maxErrors of [undefined, 0, 1, 7]) {
   values = { 'run.maxErrors': maxErrors };
   const command = context.builders.buildRunCommand('fidan', 'file with spaces.fdn', config, false);
-  assert(command.includes('"file with spaces.fdn"'));
+  assert(command.endsWith("'file with spaces.fdn'"));
   if (maxErrors === undefined || maxErrors === 1) assert(!command.includes('--max-errors'));
-  else assert(command.endsWith(`--max-errors ${maxErrors}`));
+  else assert(command.includes(`--max-errors '${maxErrors}'`));
 }
 values = { 'run.sandbox': true, 'run.sandbox.allowEnv': true };
 for (const suffix of ['Net', 'Spawn']) values[`run.sandbox.allow${suffix}`] = true;
@@ -74,15 +74,15 @@ const sandboxCommand = context.builders.buildRunCommand('fidan', 'file.fdn', con
 assert(sandboxCommand.includes('--sandbox --allow-env'));
 for (const permission of ['net', 'spawn']) assert(!sandboxCommand.includes(`--allow-${permission}`));
 values = { 'build.emit': ['obj'] };
-assert.equal(context.builders.buildBuildArgs(config, false), ' --emit obj');
+assert.equal(context.builders.buildBuildArgs(config, false), " --emit 'obj'");
 for (const trace of [undefined, 'none', 'short', 'full', 'compact']) {
   values = { 'run.trace': trace };
   commands.get('fidan.openRepl')();
-  assert.equal(sent.at(-1), `"fidan" repl --trace ${trace ?? 'none'}`);
+  assert.equal(sent.at(-1), `'fidan' repl --trace '${trace ?? 'none'}'`);
 }
 values = {};
 await commands.get('fidan.newProject')();
-assert.equal(sent.at(-1), '"fidan" new "project name; echo nope" --dir "C:/Projects with spaces"');
+assert.equal(sent.at(-1), "'fidan' new 'project name; echo nope' --dir 'C:/Projects with spaces'");
 assert.equal(informationMessages, 0);
 const beforeCancellation = sent.length;
 projectName = undefined;
@@ -90,6 +90,62 @@ await commands.get('fidan.newProject')();
 assert.equal(sent.length, beforeCancellation);
 context.process.platform = 'win32';
 commands.get('fidan.openRepl')();
-assert.equal(sent.at(-1), '& "fidan" repl --trace none');
+assert.equal(sent.at(-1), "& 'fidan' repl --trace 'none'");
 
 console.log('CLI compatibility regressions passed (builders, callbacks, metadata, grammar and README commands).');
+
+for (const platform of ['linux','win32']) {
+  context.process.platform=platform;
+  const command=context.builders.buildRunCommand('fidan',"file $(echo injected) `echo injected`.fdn",config,false);
+  assert(command.endsWith("'file $(echo injected) `echo injected`.fdn'"));
+  values={'run.sandbox':true};
+  const sandbox=context.builders.buildRunCommand('fidan','file.fdn',config,false);
+  assert(sandbox.indexOf('--sandbox')<sandbox.indexOf("'file.fdn'"));
+}
+
+if (process.env.FIDAN_BIN) {
+  const {spawnSync,spawn}=await import('node:child_process');
+  const {tmpdir}=await import('node:os');
+  const executable=path.resolve(process.env.FIDAN_BIN);
+  const folder=fs.mkdtempSync(path.join(tmpdir(),'fidan-editor-compat-'));
+  try {
+    const filename=path.join(folder,"source $(echo unwanted) `literal` 'quote'.fdn");
+    fs.writeFileSync(filename,'use std.env\nprint(env.get("FIDAN_EDITOR_TEST"))\n');
+    context.process.platform=process.platform;
+    values={'run.sandbox':true,'run.jitThreshold':0};
+    const binary=process.platform==='win32'?`& '${executable.replaceAll("'","''")}'`:`'${executable.replaceAll("'","'\\''")}'`;
+    const command=context.builders.buildRunCommand(binary,filename,config,false);
+    const result=process.platform==='win32'
+      ?spawnSync('powershell.exe',['-NoProfile','-NonInteractive','-Command',command],{encoding:'utf8',env:{...process.env,FIDAN_EDITOR_TEST:'local-fixture'},timeout:20000})
+      :spawnSync('bash',['-c',command],{encoding:'utf8',env:{...process.env,FIDAN_EDITOR_TEST:'local-fixture'},timeout:20000});
+    assert.equal(result.status,1,`Sandbox command must reject env access. Command: ${command}; stdout: ${result.stdout}; stderr: ${result.stderr}`);
+    assert.match(result.stderr,/sandbox|permission|denied/i);
+    assert(!result.stdout.includes('local-fixture'));
+    const server=spawn(executable,['lsp'],{stdio:['pipe','pipe','pipe'],windowsHide:true});
+    const request={jsonrpc:'2.0',id:1,method:'initialize',params:{processId:null,rootUri:null,capabilities:{}}};
+    const body=JSON.stringify(request);
+    const response=new Promise((resolve,reject)=>{
+      let buffer=Buffer.alloc(0);
+      server.once('error',reject);
+      server.stdout.on('data',chunk=>{
+        buffer=Buffer.concat([buffer,chunk]);
+        for (;;) {
+          const end=buffer.indexOf('\r\n\r\n');if(end<0)return;
+          const length=/Content-Length: (\d+)/i.exec(buffer.subarray(0,end).toString())?.[1];
+          if(!length)return reject(new Error('Invalid LSP response framing'));
+          const size=Number(length);if(buffer.length<end+4+size)return;
+          const message=JSON.parse(buffer.subarray(end+4,end+4+size).toString());buffer=buffer.subarray(end+4+size);
+          if(message.id===1)resolve(message);
+        }
+      });
+    });
+    const timer=setTimeout(()=>server.kill(),10000);
+    try {
+      server.stdin.write(`Content-Length: ${Buffer.byteLength(body)}\r\n\r\n${body}`);
+      const initialized=await Promise.race([response,new Promise((_,reject)=>server.once('exit',()=>reject(new Error('LSP exited before initialize'))))]);
+      assert(initialized.result.capabilities.completionProvider);
+      assert(initialized.result.capabilities.documentFormattingProvider);
+    } finally {clearTimeout(timer);server.kill();}
+    console.log('Actual CLI sandbox/quoting and LSP initialize checks passed.');
+  } finally {fs.rmSync(folder,{recursive:true,force:true});}
+}

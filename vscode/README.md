@@ -132,3 +132,5 @@ Commercial software use, distribution and sale are permitted under the license. 
 
 Copyright © 2026 Kaan Gönüldinc (AppSolves). All rights reserved.  
 **Fidan™** is a trademark of Kaan Gönüldinc (AppSolves).
+
+Terminal commands quote arguments literally for PowerShell and POSIX shells. For cmd.exe, unsafe shell metacharacters are rejected; select PowerShell or Bash for such paths. Run settings are placed before the source filename so Fidan consumes them rather than forwarding them to the program.

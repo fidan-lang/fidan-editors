@@ -482,7 +482,8 @@
     "lint": "eslint src --ext ts",
     "typecheck": "tsc --noEmit -p ./",
     "bundle": "node ./scripts/build.mjs",
-    "sync-notice": "node -e \"require('fs').copyFileSync('../NOTICE', 'NOTICE')\""
+    "sync-notice": "node -e \"require('fs').copyFileSync('../NOTICE', 'NOTICE')\"",
+    "check:compatibility": "node scripts/check-compatibility.mjs"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",

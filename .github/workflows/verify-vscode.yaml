@@ -1,0 +1,63 @@
+name: Verify VS Code extension
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      compiler_ref:
+        description: "Approved compiler candidate ref for actual CLI/LSP checks (requires the Dal audit fixes)"
+        type: string
+        required: true
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: vscode
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: vscode/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run compile
+      - run: npm run check:compatibility
+      - run: mkdir -p ../artifacts && npx @vscode/vsce package --out ../artifacts/fidan-audit.vsix
+
+  candidate-cli:
+    if: github.event_name == 'workflow_dispatch'
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            suffix: ''
+          - os: windows-latest
+            suffix: .exe
+          - os: macos-latest
+            suffix: ''
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: editors
+      - uses: actions/checkout@v6
+        with:
+          repository: fidan-lang/fidan
+          ref: ${{ inputs.compiler_ref }}
+          path: compiler
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - run: cargo build --manifest-path compiler/Cargo.toml -p fidan-cli --locked
+      - run: npm ci
+        working-directory: editors/vscode
+      - run: npm run check:compatibility
+        working-directory: editors/vscode
+        env:
+          FIDAN_BIN: ${{ github.workspace }}/compiler/target/debug/fidan${{ matrix.suffix }}
