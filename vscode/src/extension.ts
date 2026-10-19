@@ -135,7 +135,11 @@ function buildRunCommand(
     args.push(`--emit ${q(String(emit))}`);
   }
 
-  if (config.get<boolean>("run.sandbox") ?? false) {
+  // A boolean parent setting hides its dotted permission children in VS Code.
+  // Keep recognizing the legacy flag, but use a separate enabled leaf now.
+  const sandbox = config.get<boolean>("run.sandbox.enabled") === true
+    || config.get<unknown>("run.sandbox") === true;
+  if (sandbox) {
     args.push("--sandbox");
     const allowRead = (config.get<string[]>("run.sandbox.allowRead") ?? []).join(",");
     if (allowRead) {
@@ -755,7 +759,8 @@ async function startClient(): Promise<void> {
     synchronize: {
       fileEvents: vscode.workspace.createFileSystemWatcher("**/*.fdn"),
     },
-    markdown: { isTrusted: true },
+    // Hover documentation can originate in third-party packages/source comments.
+    markdown: { isTrusted: false },
   };
 
   client = new LanguageClient("fidan", "Fidan Language Server", serverOptions, clientOptions);

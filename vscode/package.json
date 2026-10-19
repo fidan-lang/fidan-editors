@@ -168,7 +168,7 @@
           "default": "none",
           "description": "Pass `--trace <mode>` to `fidan run` and `fidan repl`."
         },
-        "fidan.run.sandbox": {
+        "fidan.run.sandbox.enabled": {
           "type": "boolean",
           "default": false,
           "description": "Pass `--sandbox` to `fidan run` (deny file and environment access by default)."
@@ -179,7 +179,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "Path prefixes passed via `--allow-read` when `fidan.run.sandbox` is enabled. Use `*` to allow all."
+          "description": "Path prefixes passed via `--allow-read` when `fidan.run.sandbox.enabled` is enabled. Use `*` to allow all."
         },
         "fidan.run.sandbox.allowWrite": {
           "type": "array",
@@ -187,12 +187,12 @@
             "type": "string"
           },
           "default": [],
-          "description": "Path prefixes passed via `--allow-write` when `fidan.run.sandbox` is enabled."
+          "description": "Path prefixes passed via `--allow-write` when `fidan.run.sandbox.enabled` is enabled."
         },
         "fidan.run.sandbox.allowEnv": {
           "type": "boolean",
           "default": false,
-          "description": "Pass `--allow-env` when `fidan.run.sandbox` is enabled."
+          "description": "Pass `--allow-env` when `fidan.run.sandbox.enabled` is enabled."
         },
         "fidan.run.sandbox.timeLimit": {
           "type": "number",
@@ -483,7 +483,8 @@
     "typecheck": "tsc --noEmit -p ./",
     "bundle": "node ./scripts/build.mjs",
     "sync-notice": "node -e \"require('fs').copyFileSync('../NOTICE', 'NOTICE')\"",
-    "check:compatibility": "node scripts/check-compatibility.mjs"
+    "check:compatibility": "node scripts/check-compatibility.mjs",
+    "check:host": "node scripts/check-extension-host.cjs"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",

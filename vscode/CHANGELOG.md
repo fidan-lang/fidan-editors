@@ -10,6 +10,10 @@ compiler releases.
 
 ## [Unreleased]
 
+- Use `fidan.run.sandbox.enabled` so VS Code can retain nested sandbox permissions; continue recognizing the legacy boolean flag.
+- Keep source/package hover Markdown untrusted, preventing documentation from granting command-link trust.
+- Add a real installed VS Code host smoke check with an isolated profile and the candidate compiler.
+
 ---
 
 ## [v1.0.10] - 2026-10-07

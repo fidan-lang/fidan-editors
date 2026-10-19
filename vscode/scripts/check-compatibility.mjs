@@ -13,11 +13,13 @@ assert(read('README.md').includes('[NOTICE](NOTICE)'), 'README must link to the 
 const settings = pkg.contributes.configuration.properties;
 assert.equal(settings['fidan.run.maxErrors'].default, 1);
 assert.equal(settings['fidan.run.maxErrors'].minimum, 0);
+assert.equal(settings['fidan.run.sandbox.enabled'].default, false);
+assert(!Object.hasOwn(settings, 'fidan.run.sandbox'), 'A scalar parent would hide permission settings');
 assert(settings['fidan.build.emit'].items.enum.includes('obj'));
 assert(!settings['fidan.run.emit'].items.enum.includes('obj'));
 assert(!pkg.categories.includes('Debuggers'));
 assert.deepEqual(Object.keys(settings).filter(key => key.startsWith('fidan.run.sandbox.')).sort(),
-  ['allowEnv', 'allowRead', 'allowWrite', 'memLimit', 'timeLimit'].map(key => `fidan.run.sandbox.${key}`).sort());
+  ['allowEnv', 'allowRead', 'allowWrite', 'enabled', 'memLimit', 'timeLimit'].sort().map(key => `fidan.run.sandbox.${key}`).sort());
 const grammar = JSON.parse(read('syntaxes/fidan.tmLanguage.json'));
 assert(new RegExp(grammar.repository['type-builtin'].match).test('hashset'));
 
@@ -34,7 +36,7 @@ function visit(node) {
 visit(source);
 let values = {};
 let projectName = '  project name; echo nope  ';
-const config = { get: key => values[key] };
+const config = { get: key => values[key] ?? settings[`fidan.${key}`]?.default };
 const commands = new Map();
 const sent = [];
 let informationMessages = 0;
@@ -68,7 +70,10 @@ for (const maxErrors of [undefined, 0, 1, 7]) {
   if (maxErrors === undefined || maxErrors === 1) assert(!command.includes('--max-errors'));
   else assert(command.includes(`--max-errors '${maxErrors}'`));
 }
-values = { 'run.sandbox': true, 'run.sandbox.allowEnv': true };
+// VS Code also returns contributed defaults when the user has only the legacy flag.
+values = { 'run.sandbox': true };
+assert(context.builders.buildRunCommand('fidan', 'file.fdn', config, false).includes('--sandbox'));
+values = { 'run.sandbox.enabled': true, 'run.sandbox.allowEnv': true };
 for (const suffix of ['Net', 'Spawn']) values[`run.sandbox.allow${suffix}`] = true;
 const sandboxCommand = context.builders.buildRunCommand('fidan', 'file.fdn', config, false);
 assert(sandboxCommand.includes('--sandbox --allow-env'));
@@ -98,7 +103,7 @@ for (const platform of ['linux','win32']) {
   context.process.platform=platform;
   const command=context.builders.buildRunCommand('fidan',"file $(echo injected) `echo injected`.fdn",config,false);
   assert(command.endsWith("'file $(echo injected) `echo injected`.fdn'"));
-  values={'run.sandbox':true};
+  values={'run.sandbox.enabled':true};
   const sandbox=context.builders.buildRunCommand('fidan','file.fdn',config,false);
   assert(sandbox.indexOf('--sandbox')<sandbox.indexOf("'file.fdn'"));
 }
@@ -112,7 +117,7 @@ if (process.env.FIDAN_BIN) {
     const filename=path.join(folder,"source $(echo unwanted) `literal` 'quote'.fdn");
     fs.writeFileSync(filename,'use std.env\nprint(env.get("FIDAN_EDITOR_TEST"))\n');
     context.process.platform=process.platform;
-    values={'run.sandbox':true,'run.jitThreshold':0};
+    values={'run.sandbox.enabled':true,'run.jitThreshold':0};
     const binary=process.platform==='win32'?`& '${executable.replaceAll("'","''")}'`:`'${executable.replaceAll("'","'\\''")}'`;
     const command=context.builders.buildRunCommand(binary,filename,config,false);
     const result=process.platform==='win32'

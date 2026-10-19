@@ -96,11 +96,17 @@ All commands are available from the **Command Palette** (`Ctrl+Shift+P`). **Run*
 
 ### Sandbox
 
-When `fidan.run.sandbox` is `true`, file and environment access is denied by default. Grant permissions individually:
+When `fidan.run.sandbox.enabled` is `true`, file and environment access is denied by default. Grant permissions individually:
+
+The audit candidate uses `.enabled` to avoid a VS Code configuration collision
+between a boolean parent and its permission children. The old boolean
+`fidan.run.sandbox` remains recognized as a legacy on/off flag; remove that key
+and use `.enabled` when configuring permissions. This migration is unreleased.
+
 
 | Setting | Default | Description |
 |---|---|---|
-| `fidan.run.sandbox` | `false` | Enable sandbox mode |
+| `fidan.run.sandbox.enabled` | `false` | Enable sandbox mode |
 | `fidan.run.sandbox.allowRead` | `[]` | Allowed read path prefixes (`["*"]` = all) |
 | `fidan.run.sandbox.allowWrite` | `[]` | Allowed write path prefixes |
 | `fidan.run.sandbox.allowEnv` | `false` | Allow environment variable access |
