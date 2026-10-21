@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
@@ -8,6 +9,10 @@ import ts from 'typescript';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 const pkg = JSON.parse(read('package.json'));
+assert.equal(pkg.license, 'Apache-2.0');
+assert.equal(createHash('sha256').update(fs.readFileSync(path.join(root, '../LICENSE'))).digest('hex'),
+  'cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30');
+assert.equal(read('LICENSE'), read('../LICENSE'), 'Packaged LICENSE must match unmodified Apache 2.0');
 assert.equal(read('NOTICE'), read('../NOTICE'), 'Packaged NOTICE source must match the canonical root notice');
 assert(read('README.md').includes('[NOTICE](NOTICE)'), 'README must link to the included notice');
 const settings = pkg.contributes.configuration.properties;

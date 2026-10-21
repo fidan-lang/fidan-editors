@@ -4,7 +4,7 @@
   <p><em>Official editor integrations for the <strong>Fidan</strong> programming language</em></p>
 
   [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/fidan.fidan?label=Marketplace&logo=visualstudiocode&logoColor=white&color=0078d7)](https://marketplace.visualstudio.com/items?itemName=fidan.fidan)&nbsp;[![VS Code Engine](https://img.shields.io/badge/VS%20Code-%5E1.110.0-007ACC?logo=visualstudiocode&logoColor=white)](https://code.visualstudio.com)
-  [![License](https://img.shields.io/badge/license-Apache--2.0%20(Modified)-brightgreen)](LICENSE)&nbsp;[![Fidan Language](https://img.shields.io/badge/language-Fidan-orange)](https://fidan.dev)
+  [![License](https://img.shields.io/badge/license-Apache--2.0-brightgreen)](LICENSE)&nbsp;[![Fidan Language](https://img.shields.io/badge/language-Fidan-orange)](https://fidan.dev)
 </div>
 
 ---
@@ -364,10 +364,14 @@ Security issues should be reported in accordance with [SECURITY.md](SECURITY.md)
 
 This extension is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) for the full text.
 
-Commercial software use, distribution and sale are permitted under the license. Additional restrictions concern Fidan trademarks/branding and false official affiliation; see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Commercial use, modification, redistribution, sale and hosting are permitted under
+the license. Preserve [NOTICE](NOTICE) attribution. Branding is separate from the
+software license: see the [Fidan trademark policy](https://github.com/fidan-lang/fidan/blob/main/TRADEMARKS.md).
+Truthful descriptive references and independent forks are welcome; do not falsely
+claim official affiliation or endorsement.
 
 Copyright © 2026 Kaan Gönüldinc (AppSolves). All rights reserved.
-**Fidan™** is a trademark of Kaan Gönüldinc (AppSolves).
+Fidan identifies the official language project; branding guidance is linked above.
 
 ## Dal audit compatibility gate
 

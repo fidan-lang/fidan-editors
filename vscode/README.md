@@ -134,10 +134,14 @@ and use `.enabled` when configuring permissions. This migration is unreleased.
 
 Licensed under the **Apache License 2.0** — see [LICENSE](LICENSE) for the full text.
 
-Commercial software use, distribution and sale are permitted under the license. Additional restrictions concern Fidan trademarks/branding and false official affiliation; see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Commercial use, modification, redistribution, sale and hosting are permitted under
+the license. Preserve [NOTICE](NOTICE) attribution. Branding is separate from the
+software license: see the [Fidan trademark policy](https://github.com/fidan-lang/fidan/blob/main/TRADEMARKS.md).
+Truthful descriptive references and independent forks are welcome; do not falsely
+claim official affiliation or endorsement.
 
 Copyright © 2026 Kaan Gönüldinc (AppSolves). All rights reserved.  
-**Fidan™** is a trademark of Kaan Gönüldinc (AppSolves).
+Fidan identifies the official language project; branding guidance is linked above.
 
 Terminal commands quote arguments literally for PowerShell and POSIX shells. For cmd.exe, unsafe shell metacharacters are rejected; select PowerShell or Bash for such paths. Run settings are placed before the source filename so Fidan consumes them rather than forwarding them to the program.
 
