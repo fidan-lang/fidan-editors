@@ -24,6 +24,7 @@ if (require.main === module) {
     "extensions.autoUpdate": false, "extensions.autoCheckUpdates": false,
     "workbench.enableExperiments": false, "git.enabled": false,
     "security.workspace.trust.enabled": false,
+    "editor.tabSize": 4, "editor.detectIndentation": false,
   }));
   fs.writeFileSync(path.join(workspace, "main file.fdn"), "use unavailable_host_smoke_module\n");
   fs.writeFileSync(path.join(workspace, "helper.fdn"),
@@ -94,7 +95,20 @@ if (require.main === module) {
     console.log("HOST PASS conversion receiver completions");
 
     await replace('action greet returns string {\nreturn "hello"\n}\n');
+    // The editor UI command can resolve before its asynchronous edits land.
+    // Observe the real document event; never treat command dispatch as completion.
+    const formatted = new Promise((resolve, reject) => {
+      const subscription = vscode.workspace.onDidChangeTextDocument(event => {
+        if (event.document.uri.toString() === uri.toString() && doc.getText().includes('\n    return "hello"')) {
+          clearTimeout(timer); subscription.dispose(); resolve();
+        }
+      });
+      const timer = setTimeout(() => {
+        subscription.dispose(); reject(new Error(`Format command did not update document: ${doc.getText()}`));
+      }, 20000);
+    });
     await vscode.commands.executeCommand("fidan.formatFile");
+    await formatted;
     assert(doc.getText().includes('\n    return "hello"'), doc.getText());
     console.log("HOST PASS actual format command");
     const actualConfig = vscode.workspace.getConfiguration("fidan");

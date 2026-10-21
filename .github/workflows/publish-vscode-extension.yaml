@@ -29,12 +29,12 @@ jobs:
 
     steps:
       - name: Checkout editor repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ inputs.tag_name || github.ref }}
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
           cache: npm
@@ -70,7 +70,7 @@ jobs:
 
       - name: Setup current released Fidan for real compatibility checks
         id: fidan
-        uses: fidan-lang/fidan-actions/setup@v1
+        uses: fidan-lang/fidan-actions/setup@ac9b0694edb6c4a6cbef3c2642e3f3aafacfd820 # v1
         with:
           version: latest
 
@@ -100,7 +100,7 @@ jobs:
           npx @vscode/vsce publish --packagePath "../artifacts/fidan-${VERSION}.vsix" -p "$VSCE_PAT"
 
       - name: Create GitHub release and upload VSIX
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           tag_name: ${{ env.TAG_NAME }}
           name: Fidan VS Code ${{ env.VERSION }}

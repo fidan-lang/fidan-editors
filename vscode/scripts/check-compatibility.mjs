@@ -26,7 +26,7 @@ assert(new RegExp(grammar.repository['type-builtin'].match).test('hashset'));
 // Execute the real builders and registered callbacks; stub only VS Code UI/terminal APIs.
 const source = ts.createSourceFile('extension.ts', read('src/extension.ts'), ts.ScriptTarget.Latest, true);
 const functionNames = new Set(['q', 'fidanBin', 'terminalBin', 'needsPowerShellCallOperator',
-  'resolveTerminalShellHint', 'runCmd', 'buildRunCommand', 'buildBuildArgs']);
+  'terminalShellKind', 'resolveTerminalShellHint', 'runCmd', 'buildRunCommand', 'buildBuildArgs']);
 const functions = source.statements.filter(node => ts.isFunctionDeclaration(node) && functionNames.has(node.name?.text));
 const registrations = [];
 function visit(node) {
@@ -108,6 +108,31 @@ for (const platform of ['linux','win32']) {
   assert(sandbox.indexOf('--sandbox')<sandbox.indexOf("'file.fdn'"));
 }
 
+// The built-in Windows profile source is a display name, not an executable path.
+context.process.platform='win32';
+for (const hint of ['Command Prompt','C:\\Windows\\System32\\cmd.exe']) {
+  values={'defaultProfile.windows':'Fixture','profiles.windows':{Fixture:{source:hint}}};
+  commands.get('fidan.openRepl')();
+  assert.equal(sent.at(-1),'"fidan" repl --trace "none"');
+  const command=context.builders.buildRunCommand('fidan','C:/path with spaces/file.fdn',config,false);
+  assert(command.endsWith('"C:/path with spaces/file.fdn"'));
+  assert.throws(()=>context.builders.buildRunCommand('fidan','C:/bad%PATH%.fdn',config,false));
+}
+values={'defaultProfile.windows':'Command Prompt','profiles.windows':{}};
+commands.get('fidan.openRepl')();
+assert.equal(sent.at(-1),'"fidan" repl --trace "none"','built-in Command Prompt needs no user profile override');
+values={'defaultProfile.windows':'Ubuntu (WSL)','profiles.windows':{}};
+commands.get('fidan.openRepl')();
+assert.equal(sent.at(-1),"'fidan' repl --trace 'none'",'built-in WSL needs POSIX quoting without a user profile override');
+// A terminal named like ours may have an old profile or a nested interactive shell.
+let reused=false;
+vscode.window.terminals=[{name:'Fidan: Test',exitStatus:undefined,show(){},sendText(){reused=true;}}];
+values={};
+context.runCmd('Fidan: Test','safe fixture command');
+assert.equal(reused,false,'quoted commands must not run in a terminal with unknown shell state');
+assert.equal(sent.at(-1),'safe fixture command');
+vscode.window.terminals=[];
+values={};
 if (process.env.FIDAN_BIN) {
   const {spawnSync,spawn}=await import('node:child_process');
   const {tmpdir}=await import('node:os');

@@ -140,3 +140,10 @@ Copyright © 2026 Kaan Gönüldinc (AppSolves). All rights reserved.
 **Fidan™** is a trademark of Kaan Gönüldinc (AppSolves).
 
 Terminal commands quote arguments literally for PowerShell and POSIX shells. For cmd.exe, unsafe shell metacharacters are rejected; select PowerShell or Bash for such paths. Run settings are placed before the source filename so Fidan consumes them rather than forwarding them to the program.
+
+Terminal commands open a fresh terminal using the current default profile, so
+quoting cannot drift from a reused terminal's shell. PowerShell, the Windows
+Command Prompt and WSL profiles, and POSIX-shell argument quoting are handled separately.
+Arguments unsafe for Command Prompt expansion are rejected; use PowerShell/Bash
+for paths containing its expansion/metacharacters. Commands sent to a terminal
+do not imply successful completion.

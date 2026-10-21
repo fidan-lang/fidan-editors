@@ -28,16 +28,24 @@ function terminalBin(config: vscode.WorkspaceConfiguration): string {
 function q(p: string): string {
   if (/[\r\n\0]/.test(p)) { throw new Error("Terminal arguments must be single-line strings."); }
   if (needsPowerShellCallOperator()) { return "'" + p.replace(/'/g, "''") + "'"; }
-  if (process.platform === "win32" && /cmd(?:\.exe)?$/i.test(resolveTerminalShellHint() ?? "")) {
+  if (terminalShellKind() === "cmd") {
     if (/["&|<>^%!]/.test(p)) { throw new Error("This argument cannot be passed safely to cmd.exe. Select PowerShell or Bash."); }
     return `"${p}"`;
   }
   return "'" + p.replace(/'/g, "'\\''") + "'";
 }
 
+function terminalShellKind(): "powershell" | "cmd" | "posix" {
+  const hint = resolveTerminalShellHint();
+  if (process.platform === "win32" && /(?:cmd(?:\.exe)?|Command Prompt)$/i.test(hint ?? "")) {
+    return "cmd";
+  }
+  return (hint ? /(pwsh|powershell)(\.exe)?$/i.test(hint) : process.platform === "win32")
+    ? "powershell" : "posix";
+}
+
 function needsPowerShellCallOperator(): boolean {
-  const shellHint = resolveTerminalShellHint();
-  return shellHint ? /(pwsh|powershell)(\.exe)?$/i.test(shellHint) : process.platform === "win32";
+  return terminalShellKind() === "powershell";
 }
 
 function resolveTerminalShellHint(): string | undefined {
@@ -60,6 +68,10 @@ function resolveTerminalShellHint(): string | undefined {
     }
   }
 
+  // Built-in profiles need not have a user-defined profiles entry.
+  if (defaultProfile && /^(Command Prompt|PowerShell|Windows PowerShell|Git Bash|Bash|zsh|.+ \(WSL\))$/i.test(defaultProfile)) {
+    return defaultProfile;
+  }
   return undefined;
 }
 
@@ -85,12 +97,9 @@ async function requireActiveFidanEditor(save = true): Promise<vscode.TextEditor 
 }
 
 function runCmd(name: string, cmd: string): void {
-  let terminal = vscode.window.terminals.find(
-    t => t.name === name && t.exitStatus === undefined,
-  );
-  if (!terminal) {
-    terminal = vscode.window.createTerminal(name);
-  }
+  // Quoting targets the current default profile. Reused terminals can retain an
+  // old profile or a nested shell, so send commands only to a fresh terminal.
+  const terminal = vscode.window.createTerminal(name);
   terminal.show(true);
   terminal.sendText(cmd);
 }
