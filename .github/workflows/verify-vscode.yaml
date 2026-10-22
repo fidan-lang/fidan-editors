@@ -54,6 +54,9 @@ jobs:
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
+      - name: Linux compiler system dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config xvfb
       - run: cargo build --manifest-path compiler/Cargo.toml -p fidan-cli --locked
       - run: npm ci
         working-directory: editors/vscode
@@ -61,3 +64,23 @@ jobs:
         working-directory: editors/vscode
         env:
           FIDAN_BIN: ${{ github.workspace }}/compiler/target/debug/fidan${{ matrix.suffix }}
+      - run: npm run lint && npm run compile
+        working-directory: editors/vscode
+      - name: Prepare verified minimum VS Code host
+        id: host
+        run: node scripts/prepare-extension-host.mjs
+        working-directory: editors/vscode
+      - name: Real minimum-version extension host (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a node scripts/check-extension-host.cjs
+        working-directory: editors/vscode
+        env:
+          FIDAN_BIN: ${{ github.workspace }}/compiler/target/debug/fidan${{ matrix.suffix }}
+          VSCODE_EXECUTABLE: ${{ steps.host.outputs.executable }}
+      - name: Real minimum-version extension host (Windows/macOS)
+        if: runner.os != 'Linux'
+        run: node scripts/check-extension-host.cjs
+        working-directory: editors/vscode
+        env:
+          FIDAN_BIN: ${{ github.workspace }}/compiler/target/debug/fidan${{ matrix.suffix }}
+          VSCODE_EXECUTABLE: ${{ steps.host.outputs.executable }}
