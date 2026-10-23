@@ -8,6 +8,10 @@ on:
         description: "Approved compiler candidate ref for actual CLI/LSP checks (requires the Dal audit fixes)"
         type: string
         required: true
+      cli_diagnostics:
+        description: "Exercise new compiler INFO/DEBUG/TRACE transport (requires a matching compiler_ref)"
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -77,6 +81,7 @@ jobs:
         env:
           FIDAN_BIN: ${{ github.workspace }}/compiler/target/debug/fidan${{ matrix.suffix }}
           VSCODE_EXECUTABLE: ${{ steps.host.outputs.executable }}
+          FIDAN_HOST_DIAGNOSTICS: ${{ inputs.cli_diagnostics && 'trace' || 'off' }}
       - name: Real minimum-version extension host (Windows/macOS)
         if: runner.os != 'Linux'
         run: node scripts/check-extension-host.cjs
@@ -84,3 +89,4 @@ jobs:
         env:
           FIDAN_BIN: ${{ github.workspace }}/compiler/target/debug/fidan${{ matrix.suffix }}
           VSCODE_EXECUTABLE: ${{ steps.host.outputs.executable }}
+          FIDAN_HOST_DIAGNOSTICS: ${{ inputs.cli_diagnostics && 'trace' || 'off' }}

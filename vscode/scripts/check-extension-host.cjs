@@ -4,10 +4,16 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const extensionRoot = path.resolve(__dirname, "..");
+const traceDiagnostics = process.env.FIDAN_HOST_DIAGNOSTICS === "trace";
 
 if (require.main === module) {
   const sourceCompiler = process.env.FIDAN_BIN;
   assert(sourceCompiler && fs.statSync(sourceCompiler).isFile(), "Set FIDAN_BIN to the candidate CLI");
+  if (traceDiagnostics) {
+    const help = spawnSync(sourceCompiler, ["--help"], { encoding: "utf8", windowsHide: true });
+    assert.equal(help.status, 0, help.stderr);
+    assert(help.stdout.includes("--verbose"), "TRACE host checks require the new compiler candidate; old public versions do not implement global verbosity");
+  }
   const executable = process.env.VSCODE_EXECUTABLE;
   assert(executable && fs.statSync(executable).isFile(), "Set VSCODE_EXECUTABLE to the installed Code executable");
   const output = path.resolve(extensionRoot, "../target");
@@ -22,6 +28,7 @@ if (require.main === module) {
   fs.mkdirSync(path.join(profile, "User"), { recursive: true });
   fs.writeFileSync(path.join(profile, "User/settings.json"), JSON.stringify({
     "fidan.server.path": compiler, "fidan.trace.server": "verbose",
+    "fidan.server.extraArgs": traceDiagnostics ? ["-vvv"] : [],
     "fidan.run.sandbox.enabled": true, "fidan.run.sandbox.allowRead": [workspace],
     "telemetry.telemetryLevel": "off", "update.mode": "none",
     "extensions.autoUpdate": false, "extensions.autoCheckUpdates": false,
@@ -256,6 +263,11 @@ if (require.main === module) {
         }
         console.log("HOST PASS server.path changes and compiler executable path with spaces");
         if (process.env.FIDAN_HOST_OLD_COMPILER) {
+          if (traceDiagnostics) {
+            const plainRestart = serverStarted(selectedCompiler);
+            await vscode.workspace.getConfiguration("fidan").update("server.extraArgs", [], vscode.ConfigurationTarget.Workspace);
+            await plainRestart;
+          }
           const controlUri = vscode.Uri.file(path.join(workspace, "old compiler capability.fdn"));
           fs.writeFileSync(controlUri.fsPath, "action known {}\nprint(known.parameters)\n");
           const oldDiagnostics = publication(controlUri, items => items.some(item => item.code === "E0204"));
@@ -269,6 +281,11 @@ if (require.main === module) {
           await recovered;
           const definition = await vscode.commands.executeCommand("vscode.executeDefinitionProvider", greetUri, decorator);
           assert(definition?.length, "Candidate must recover imported decorator semantics after old server");
+          if (traceDiagnostics) {
+            const verboseRestart = serverStarted(selectedCompiler);
+            await vscode.workspace.getConfiguration("fidan").update("server.extraArgs", ["-vvv"], vscode.ConfigurationTarget.Workspace);
+            await verboseRestart;
+          }
           console.log("HOST PASS old public compiler reports unsupported callable API and candidate recovery");
         } else {
           console.log("HOST SKIP old compiler comparison: set FIDAN_HOST_OLD_COMPILER");
@@ -277,6 +294,11 @@ if (require.main === module) {
         assert(output.includes(JSON.stringify(selectedCompiler)), "Output must identify selected compiler path");
         assert(/Language server started: fidan-lsp \d+\.\d+\.\d+/.test(output), "Output must identify server-reported version");
         if (process.env.FIDAN_HOST_OLD_COMPILER) assert(output.includes(JSON.stringify(process.env.FIDAN_HOST_OLD_COMPILER)));
+        if (traceDiagnostics) {
+          assert(output.includes("LSP initialize received"), "CLI diagnostics must reach the stderr output channel");
+          assert(output.includes("LSP diagnostics ready"), "Verbose diagnostics must coexist with JSON-RPC");
+          console.log("HOST PASS verbose CLI stderr and actual LSP diagnostics coexist");
+        }
         console.log("HOST PASS actual output logs show executable selection and reported version");
 
       } finally {

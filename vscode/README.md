@@ -86,6 +86,17 @@ All commands are available from the **Command Palette** (`Ctrl+Shift+P`). **Run*
 | `fidan.server.extraArgs` | `[]` | Extra arguments forwarded to `fidan lsp` |
 | `fidan.trace.server` | `"off"` | LSP trace level: `off` \| `messages` \| `verbose` |
 
+### Compiler operational diagnostics (candidate)
+
+When using the new compiler candidate, set `fidan.server.extraArgs` to `["-vvv"]`
+for internal TRACE diagnostics, `["-vv"]` for DEBUG, or `["-v"]` for INFO.
+These records reach the language-server output channel over stderr; JSON-RPC
+continues to use stdout. `fidan.trace.server` separately controls client protocol
+tracing. The published Fidan 1.0.16 binary does not support these new flags.
+Normal editing needs neither verbose logging nor AI/provider setup. Logs omit
+source and credential payloads but may contain private local paths and package
+identities; review them before sharing.
+
 ### Formatting
 
 | Setting | Default | Description |
@@ -166,3 +177,9 @@ Command Prompt and WSL profiles, and POSIX-shell argument quoting are handled se
 Arguments unsafe for Command Prompt expansion are rejected; use PowerShell/Bash
 for paths containing its expansion/metacharacters. Commands sent to a terminal
 do not imply successful completion.
+
+To verify the candidate diagnostics transport locally, run `npm run check:host`
+with `FIDAN_HOST_DIAGNOSTICS=trace`, `FIDAN_BIN` selecting the new candidate and
+`VSCODE_EXECUTABLE` selecting an isolated VS Code host. The manual verification
+workflow exposes the corresponding `cli_diagnostics` input alongside `compiler_ref`.
+Old public compilers are not expected to implement these new flags.
