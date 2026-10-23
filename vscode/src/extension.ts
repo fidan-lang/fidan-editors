@@ -742,6 +742,7 @@ async function startClient(): Promise<void> {
   const config = vscode.workspace.getConfiguration("fidan");
   const binaryPath = fidanBin(config);
   const extraArgs: string[] = config.get("server.extraArgs") ?? [];
+  outputChannel.appendLine(`[fidan] Starting language server: ${JSON.stringify(binaryPath)} lsp (fidan.server.path).`);
 
   const serverOptions: ServerOptions = {
     run: {
@@ -777,7 +778,9 @@ async function startClient(): Promise<void> {
   try {
     await client.start();
     await applyClientTraceFromConfig();
-    outputChannel.appendLine("[fidan] Language server started.");
+    const serverInfo = client.initializeResult?.serverInfo;
+    outputChannel.appendLine(`[fidan] Language server started: ${serverInfo?.name ?? "Fidan"} ${serverInfo?.version ?? "version not reported"}.`);
+    outputChannel.appendLine("[fidan] Language features are provided by this selected compiler build; choose the matching candidate for unreleased APIs.");
     setStatusBarRunning();
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

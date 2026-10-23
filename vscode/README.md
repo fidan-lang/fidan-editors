@@ -28,6 +28,21 @@ First-class VS Code support for the [Fidan](https://fidan.dev) programming langu
 
 Compatibility target: **Fidan CLI 1.0.16**. Normal editing and LSP features require only the `fidan` binary on your `PATH`, or an explicit `fidan.server.path`. AI-assisted commands additionally require a compatible `ai-analysis` toolchain and provider configuration; AI setup is optional for normal editing.
 
+### Selecting the compiler for newer language APIs
+
+The **Fidan** output channel records the executable selected by
+`fidan.server.path`, the spawned `lsp` command and the server-reported version.
+Changing that setting restarts the language server. An absolute path also avoids
+selecting a different installation from PATH; paths containing spaces are supported.
+
+Callable reflection (`action.name`, `.parameters`, `.invoke(list)`), imported
+custom decorators and their associated diagnostics are tested with the coordinated
+future compiler candidate. The published Fidan 1.0.16 binary does not implement
+those new APIs. Point `fidan.server.path` at the candidate when editing candidate
+sources; installing this extension does not upgrade the compiler. Normal editing
+with the published compiler remains supported within that compiler's language
+surface. AI provider configuration is unrelated to this selection.
+
 Build from source:
 
 ```bash
