@@ -28,10 +28,25 @@ jobs:
         working-directory: vscode
 
     steps:
+      - name: Validate requested release tag before checkout
+        id: release_tag
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        env:
+          REQUESTED_TAG: ${{ inputs.tag_name || github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$REQUESTED_TAG" =~ ^vscode/v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "Expected a namespaced stable extension tag: vscode/vX.Y.Z" >&2
+            exit 1
+          fi
+          printf 'tag=%s\n' "$REQUESTED_TAG" >> "$GITHUB_OUTPUT"
+
       - name: Checkout editor repo
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: ${{ inputs.tag_name || github.ref }}
+          ref: refs/tags/${{ steps.release_tag.outputs.tag }}
+          persist-credentials: false
 
       - name: Setup Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -68,16 +83,35 @@ jobs:
       - name: Lint extension
         run: npm run lint
 
-      - name: Setup current released Fidan for real compatibility checks
-        id: fidan
-        uses: fidan-lang/fidan-actions/setup@ac9b0694edb6c4a6cbef3c2642e3f3aafacfd820 # v1
+      - name: Checkout audited Setup Action (push dependency first)
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
-          version: latest
-
-      - name: Compatibility regression check
+          repository: fidan-lang/fidan-actions
+          ref: c2d12d6c910bd250ebe9bdfc07d0761ffe2c41c3
+          path: audited-setup
+          persist-credentials: false
+      - name: Read exact compiler candidate contract
+        id: candidate
+        run: node ../audited-setup/scripts/verify-candidate.mjs ../ci/compiler-candidate.json ../audited-setup
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          repository: fidan-lang/fidan
+          ref: ${{ steps.candidate.outputs.compiler_sha }}
+          path: compiler
+          persist-credentials: false
+      - run: node ../audited-setup/scripts/verify-candidate.mjs ../ci/compiler-candidate.json ../audited-setup ../compiler
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec
+      - run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
+      - run: cargo build --manifest-path ../compiler/Cargo.toml -p fidan-cli --release --locked
+      - name: Audited installer and workflow security regressions
+        run: |
+          node ../audited-setup/scripts/check-built-candidate.mjs ../compiler/target/release/fidan
+          python -m pip install PyYAML==6.0.3
+          python ../audited-setup/scripts/check-workflows.py .. ../audited-setup
+      - name: Compatibility regression check against exact candidate
         run: npm run check:compatibility
         env:
-          FIDAN_BIN: ${{ steps.fidan.outputs.fidan-bin }}
+          FIDAN_BIN: ${{ github.workspace }}/compiler/target/release/fidan
 
       - name: Compile extension
         run: npm run compile
