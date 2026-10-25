@@ -10,6 +10,18 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 
 class ReleaseTagTests(unittest.TestCase):
+    def test_linux_extension_host_preserves_chromium_sandbox(self):
+        workflow = yaml.safe_load((ROOT / ".github/workflows/verify-vscode.yaml").read_text(encoding="utf-8"))
+        steps = workflow["jobs"]["candidate-cli"]["steps"]
+        preparation = next(s for s in steps if s.get("name") == "Configure verified Chromium sandbox helper (Linux)")
+        host = next(s for s in steps if s.get("name") == "Real minimum-version extension host (Linux)")
+        self.assertLess(steps.index(preparation), steps.index(host))
+        self.assertEqual(preparation["env"]["VSCODE_EXECUTABLE"], "${{ steps.host.outputs.executable }}")
+        self.assertIn('test ! -L "$sandbox"', preparation["run"])
+        self.assertIn('sudo chown root:root -- "$sandbox"', preparation["run"])
+        self.assertIn('sudo chmod 4755 -- "$sandbox"', preparation["run"])
+        self.assertNotIn("--no-sandbox", (ROOT / "vscode/scripts/check-extension-host.cjs").read_text(encoding="utf-8"))
+
     def test_namespaced_tag_guard_accepts_only_canonical_stable_tags(self):
         bash = os.environ.get("BASH_BIN") or shutil.which("bash")
         if os.name == "nt" and not os.environ.get("BASH_BIN"):

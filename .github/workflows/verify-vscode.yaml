@@ -105,6 +105,18 @@ jobs:
         id: host
         run: node scripts/prepare-extension-host.mjs
         working-directory: editors/vscode
+      - name: Configure verified Chromium sandbox helper (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        env:
+          VSCODE_EXECUTABLE: ${{ steps.host.outputs.executable }}
+        run: |
+          set -euo pipefail
+          sandbox="$(dirname -- "$VSCODE_EXECUTABLE")/chrome-sandbox"
+          test -f "$sandbox" && test ! -L "$sandbox"
+          sudo chown root:root -- "$sandbox"
+          sudo chmod 4755 -- "$sandbox"
+
       - name: Real minimum-version extension host (Linux)
         if: runner.os == 'Linux'
         run: xvfb-run -a node scripts/check-extension-host.cjs
