@@ -416,6 +416,16 @@ async function applyClientTraceFromConfig(): Promise<void> {
   await client.setTrace(traceLevelFromSetting(config.get<string>("trace.server") ?? "off"));
 }
 
+function documentFormattingOptions(document: vscode.TextDocument): vscode.FormattingOptions {
+  const editorConfig = vscode.workspace.getConfiguration("editor", document.uri);
+  const fidanConfig = vscode.workspace.getConfiguration("fidan", document.uri);
+  const tabSize = editorConfig.get<number | string>("tabSize");
+  return {
+    tabSize: typeof tabSize === "number" ? tabSize : (fidanConfig.get<number>("format.indentWidth") ?? 4),
+    insertSpaces: editorConfig.get<boolean>("insertSpaces") ?? true,
+  };
+}
+
 function refreshFormatOnSave(context: vscode.ExtensionContext): void {
   formatOnSaveDisposable?.dispose();
   formatOnSaveDisposable = undefined;
@@ -439,19 +449,12 @@ function refreshFormatOnSave(context: vscode.ExtensionContext): void {
         return;
       }
 
-      const liveConfig = vscode.workspace.getConfiguration("fidan");
-      const tabSizeSetting = editorConfig.get<number | string>("tabSize");
-      const tabSize =
-        typeof tabSizeSetting === "number"
-          ? tabSizeSetting
-          : (liveConfig.get<number>("format.indentWidth") ?? 4);
-      const insertSpaces = editorConfig.get<boolean>("insertSpaces") ?? true;
       event.waitUntil(
         vscode.commands
           .executeCommand<vscode.TextEdit[]>(
             "vscode.executeFormatDocumentProvider",
             event.document.uri,
-            { tabSize, insertSpaces },
+            documentFormattingOptions(event.document),
           )
           .then((edits: vscode.TextEdit[] | undefined) => edits ?? []),
       );
@@ -573,7 +576,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       await runAiFixLikeCommand("improve", filePath, vscode.workspace.getConfiguration("fidan"));
     }),
     vscode.commands.registerCommand("fidan.formatFile", async () => {
-      await vscode.commands.executeCommand("editor.action.formatDocument");
+      const editor = await requireActiveFidanEditor(false);
+      if (!editor) return;
+      const version = editor.document.version;
+      const edits = await vscode.commands.executeCommand<vscode.TextEdit[]>(
+        "vscode.executeFormatDocumentProvider", editor.document.uri,
+        documentFormattingOptions(editor.document),
+      );
+      if (editor.document.version !== version) {
+        void vscode.window.showWarningMessage("Document changed while formatting; run Format File again.");
+        return;
+      }
+      if (!edits?.length) return;
+      const applied = await editor.edit(builder => {
+        for (const edit of edits) builder.replace(edit.range, edit.newText);
+      });
+      if (!applied) void vscode.window.showErrorMessage("Fidan could not apply the formatting edits.");
     }),
     vscode.commands.registerCommand("fidan.buildFile", async () => {
       const filePath = await requireActiveFidanFile();

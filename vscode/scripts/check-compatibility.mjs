@@ -31,7 +31,7 @@ assert(new RegExp(grammar.repository['type-builtin'].match).test('hashset'));
 // Execute the real builders and registered callbacks; stub only VS Code UI/terminal APIs.
 const source = ts.createSourceFile('extension.ts', read('src/extension.ts'), ts.ScriptTarget.Latest, true);
 const functionNames = new Set(['q', 'fidanBin', 'terminalBin', 'needsPowerShellCallOperator',
-  'terminalShellKind', 'resolveTerminalShellHint', 'runCmd', 'buildRunCommand', 'buildBuildArgs']);
+  'terminalShellKind', 'resolveTerminalShellHint', 'runCmd', 'buildRunCommand', 'buildBuildArgs', 'documentFormattingOptions']);
 const functions = source.statements.filter(node => ts.isFunctionDeclaration(node) && functionNames.has(node.name?.text));
 const registrations = [];
 function visit(node) {
@@ -101,6 +101,34 @@ assert.equal(sent.length, beforeCancellation);
 context.process.platform = 'win32';
 commands.get('fidan.openRepl')();
 assert.equal(sent.at(-1), "& 'fidan' repl --trace 'none'");
+
+// Manual formatting must invoke the URI provider, independent of OS workbench focus.
+const previousExecute = vscode.commands.executeCommand;
+let appliedFormatting = 0;
+let warnings = 0;
+const formattingDocument = { uri: { scheme: 'file' }, version: 1 };
+const formattingEditor = {
+  document: formattingDocument,
+  edit: async callback => { callback({ replace: () => appliedFormatting++ }); return true; },
+};
+context.requireActiveFidanEditor = async () => formattingEditor;
+vscode.window.showWarningMessage = () => warnings++;
+vscode.window.showErrorMessage = message => { throw new Error(message); };
+values = { tabSize: 4, insertSpaces: true };
+vscode.commands.executeCommand = async name => {
+  assert.equal(name, 'vscode.executeFormatDocumentProvider');
+  return [{ range: {}, newText: 'formatted' }];
+};
+await commands.get('fidan.formatFile')();
+assert.equal(appliedFormatting, 1);
+vscode.commands.executeCommand = async () => {
+  formattingDocument.version++;
+  return [{ range: {}, newText: 'stale' }];
+};
+await commands.get('fidan.formatFile')();
+assert.equal(appliedFormatting, 1, 'Stale formatter results must not replace newer text');
+assert.equal(warnings, 1);
+vscode.commands.executeCommand = previousExecute;
 
 console.log('CLI compatibility regressions passed (builders, callbacks, metadata, grammar and README commands).');
 
