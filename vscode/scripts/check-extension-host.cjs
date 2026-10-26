@@ -97,7 +97,7 @@ if (require.main === module) {
             watcher.close(); clearTimeout(timer); resolve();
           }
         });
-        const timer = setTimeout(() => { watcher.close(); reject(new Error(`Server did not start with ${selected}`)); }, 20000);
+        const timer = setTimeout(() => { watcher.close(); reject(new Error(`Server did not start with ${selected}; resolved=${JSON.stringify(vscode.workspace.getConfiguration("fidan").get("server.path"))}; recent output=${JSON.stringify([...readOutputLogFiles()].map(([file, contents]) => [file, contents.slice(previous.get(file)?.length ?? 0).slice(-6000)]))}`)); }, 20000);
         watcher.on("error", error => { watcher.close(); clearTimeout(timer); reject(error); });
       });
     }
