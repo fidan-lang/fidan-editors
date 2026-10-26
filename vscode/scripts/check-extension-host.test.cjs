@@ -20,3 +20,9 @@ test("old, unrelated and incomplete server starts cannot satisfy a restart", () 
 test("new output channels are tracked separately from existing logs", () => {
   assert(serverStartedInLogs(new Map([["protocol", "trace"]]), new Map([["protocol", "trace++"], ["new-output", start + "\n" + ready]]), selected));
 });
+
+test("log replacement or rotation cannot hide a fresh server start", () => {
+  const before = new Map([["output", "old protocol records\n".repeat(5000)]]);
+  const after = new Map([["output", start + "\n" + ready + "\nnew protocol records"]]);
+  assert(serverStartedInLogs(before, after, selected));
+});

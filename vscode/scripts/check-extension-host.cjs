@@ -10,7 +10,8 @@ const traceDiagnostics = process.env.FIDAN_HOST_DIAGNOSTICS === "trace";
 // can skip the start marker when a different channel grows first.
 function serverStartedInLogs(before, current, selected) {
   for (const [file, contents] of current) {
-    const output = contents.slice(before.get(file)?.length ?? 0);
+    const previous = before.get(file) ?? "";
+    const output = contents.startsWith(previous) ? contents.slice(previous.length) : contents;
     const start = output.indexOf(`[fidan] Starting language server: ${JSON.stringify(selected)}`);
     if (start >= 0 && output.indexOf("[fidan] Language server started:", start) >= 0) return true;
   }
@@ -91,14 +92,25 @@ if (require.main === module) {
     }
     function serverStarted(selected) {
       const previous = readOutputLogFiles();
+      assert(previous.size, "The running language server must have an output log");
       return new Promise((resolve, reject) => {
-        const watcher = fs.watch(path.join(process.env.FIDAN_HOST_SMOKE_PROFILE, "logs"), { recursive: true }, () => {
+        // Directory notifications can miss/coalesce output flushes on hosted
+        // Windows/macOS. Observe the existing channel files with portable stat
+        // polling instead; this never retries a configuration change or restart.
+        function stop() {
+          for (const file of previous.keys()) fs.unwatchFile(file, inspect);
+          clearTimeout(timer);
+        }
+        function inspect() {
           if (serverStartedInLogs(previous, readOutputLogFiles(), selected)) {
-            watcher.close(); clearTimeout(timer); resolve();
+            stop(); resolve();
           }
-        });
-        const timer = setTimeout(() => { watcher.close(); reject(new Error(`Server did not start with ${selected}; resolved=${JSON.stringify(vscode.workspace.getConfiguration("fidan").get("server.path"))}; recent output=${JSON.stringify([...readOutputLogFiles()].map(([file, contents]) => [file, contents.slice(previous.get(file)?.length ?? 0).slice(-6000)]))}`)); }, 20000);
-        watcher.on("error", error => { watcher.close(); clearTimeout(timer); reject(error); });
+        }
+        const timer = setTimeout(() => {
+          stop();
+          reject(new Error(`Server did not start with ${selected}; resolved=${JSON.stringify(vscode.workspace.getConfiguration("fidan").get("server.path"))}; recent output=${JSON.stringify([...readOutputLogFiles()].map(([file, contents]) => [file, { beforeLength: previous.get(file)?.length ?? 0, currentLength: contents.length, appended: contents.startsWith(previous.get(file) ?? ""), markers: contents.split("\n").filter(line => line.startsWith("[fidan]")).slice(-12) }]))}`));
+        }, 20000);
+        for (const file of previous.keys()) fs.watchFile(file, inspect);
       });
     }
     const uri = vscode.Uri.file(path.join(workspace, "main file.fdn"));
