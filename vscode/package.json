@@ -483,7 +483,7 @@
     "typecheck": "tsc --noEmit -p ./",
     "bundle": "node ./scripts/build.mjs",
     "sync-notice": "node -e \"require('fs').copyFileSync('../NOTICE', 'NOTICE')\"",
-    "check:compatibility": "node scripts/check-compatibility.mjs",
+    "check:compatibility": "node scripts/check-compatibility.mjs && node --test scripts/check-extension-host.test.cjs",
     "check:host": "node scripts/check-extension-host.cjs"
   },
   "devDependencies": {

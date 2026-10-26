@@ -6,6 +6,18 @@ const { spawnSync } = require("node:child_process");
 const extensionRoot = path.resolve(__dirname, "..");
 const traceDiagnostics = process.env.FIDAN_HOST_DIAGNOSTICS === "trace";
 
+// Output and protocol channels append independently; a combined string offset
+// can skip the start marker when a different channel grows first.
+function serverStartedInLogs(before, current, selected) {
+  for (const [file, contents] of current) {
+    const output = contents.slice(before.get(file)?.length ?? 0);
+    const start = output.indexOf(`[fidan] Starting language server: ${JSON.stringify(selected)}`);
+    if (start >= 0 && output.indexOf("[fidan] Language server started:", start) >= 0) return true;
+  }
+  return false;
+}
+exports.serverStartedInLogs = serverStartedInLogs;
+
 if (require.main === module) {
   const argsRoot = process.env.FIDAN_ARGS_ROOT;
   assert(argsRoot, "FIDAN_ARGS_ROOT is required for actual args Extension Host coverage");
@@ -62,25 +74,26 @@ if (require.main === module) {
     const vscode = require("vscode");
     const workspace = process.env.FIDAN_HOST_SMOKE_WORKSPACE;
     assert(workspace, "Use the standalone smoke launcher");
-    function readOutputLogs() {
-      const output = [];
+    function readOutputLogFiles() {
+      const output = new Map();
       function walk(directory) {
         for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
           const file = path.join(directory, entry.name);
           if (entry.isDirectory()) walk(file);
-          else if (entry.name.includes("Fidan") && entry.name.endsWith(".log")) output.push(fs.readFileSync(file, "utf8"));
+          else if (entry.name.includes("Fidan") && entry.name.endsWith(".log")) output.set(file, fs.readFileSync(file, "utf8"));
         }
       }
       walk(path.join(process.env.FIDAN_HOST_SMOKE_PROFILE, "logs"));
-      return output.join("\n");
+      return output;
+    }
+    function readOutputLogs() {
+      return [...readOutputLogFiles().values()].join("\n");
     }
     function serverStarted(selected) {
-      const previous = readOutputLogs().length;
+      const previous = readOutputLogFiles();
       return new Promise((resolve, reject) => {
         const watcher = fs.watch(path.join(process.env.FIDAN_HOST_SMOKE_PROFILE, "logs"), { recursive: true }, () => {
-          const output = readOutputLogs().slice(previous);
-          const start = output.indexOf(`[fidan] Starting language server: ${JSON.stringify(selected)}`);
-          if (start >= 0 && output.indexOf("[fidan] Language server started:", start) >= 0) {
+          if (serverStartedInLogs(previous, readOutputLogFiles(), selected)) {
             watcher.close(); clearTimeout(timer); resolve();
           }
         });
