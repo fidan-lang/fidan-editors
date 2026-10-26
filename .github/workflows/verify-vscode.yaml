@@ -1,0 +1,155 @@
+name: Verify VS Code extension
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      compiler_ref:
+        description: "Optional exact 40-character compiler SHA override; defaults to ci/compiler-candidate.json"
+        type: string
+        required: false
+      cli_diagnostics:
+        description: "Exercise new compiler INFO/DEBUG/TRACE transport (requires a matching compiler_ref)"
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: vscode
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: vscode/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run compile
+      - run: npm run check:compatibility
+      - run: mkdir -p ../artifacts && npx @vscode/vsce package --out ../artifacts/fidan-audit.vsix
+
+  candidate-cli:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            suffix: ''
+          - os: windows-latest
+            suffix: .exe
+          - os: macos-latest
+            suffix: ''
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          path: editors
+          persist-credentials: false
+      - name: Checkout audited Setup Action and candidate verifier
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          repository: fidan-lang/fidan-actions
+          ref: 096d2a496cfd03b31fb0e67e4cdbb34f23f98df3
+          path: audited-setup
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 24
+      - name: Validate immutable compiler and installer identities
+        id: candidate
+        env:
+          REQUESTED_COMPILER_SHA: ${{ inputs.compiler_ref }}
+        run: node audited-setup/scripts/verify-candidate.mjs editors/ci/compiler-candidate.json audited-setup
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: fidan-lang/fidan
+          ref: ${{ steps.candidate.outputs.compiler_sha }}
+          persist-credentials: false
+          path: compiler
+      - name: Checkout exact args source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          repository: fidan-lang/args
+          ref: ${{ steps.candidate.outputs.args_sha }}
+          path: args
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+      - name: Linux compiler system dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config xvfb
+      - name: Verify checked-out compiler identity
+        env:
+          REQUESTED_COMPILER_SHA: ${{ inputs.compiler_ref }}
+        run: node audited-setup/scripts/verify-candidate.mjs editors/ci/compiler-candidate.json audited-setup compiler args
+      - run: cargo build --manifest-path compiler/Cargo.toml -p fidan-cli --locked
+      - name: Verify installer using this platform's actual built candidate
+        env:
+          BUILT_COMPILER: ${{ github.workspace }}/compiler/target/debug/fidan${{ matrix.suffix }}
+        run: node audited-setup/scripts/check-built-candidate.mjs "$env:BUILT_COMPILER"
+        shell: pwsh
+      - name: Workflow security gate
+        shell: pwsh
+        run: |
+          python -m pip install PyYAML==6.0.3
+          if ($LASTEXITCODE -ne 0) { throw 'YAML tooling failed' }
+          python audited-setup/scripts/check-workflows.py editors audited-setup
+          if ($LASTEXITCODE -ne 0) { throw 'Workflow security gate failed' }
+          python editors/ci/test-release-tag.py
+          if ($LASTEXITCODE -ne 0) { throw 'Release tag guard regressions failed' }
+          python editors/ci/test-candidate-coverage.py
+          if ($LASTEXITCODE -ne 0) { throw 'Mandatory candidate coverage regressions failed' }
+      - run: npm ci
+        working-directory: editors/vscode
+      - run: npm run check:compatibility
+        working-directory: editors/vscode
+        env:
+          FIDAN_BIN: ${{ github.workspace }}/compiler/target/debug/fidan${{ matrix.suffix }}
+      - run: npm run lint && npm run compile
+        working-directory: editors/vscode
+      - name: Actual args LSP JSON-RPC regressions
+        shell: pwsh
+        env:
+          FIDAN_BIN: ${{ github.workspace }}/compiler/target/debug/fidan${{ matrix.suffix }}
+          FIDAN_ARGS_ROOT: ${{ github.workspace }}/args
+        run: |
+          python compiler/test/scripts/test_args_lsp.py
+          if ($LASTEXITCODE -ne 0) { throw 'Actual args LSP regressions failed' }
+      - name: Prepare verified minimum VS Code host
+        id: host
+        run: node scripts/prepare-extension-host.mjs
+        working-directory: editors/vscode
+      - name: Configure verified Chromium sandbox helper (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        env:
+          VSCODE_EXECUTABLE: ${{ steps.host.outputs.executable }}
+        run: |
+          set -euo pipefail
+          sandbox="$(dirname -- "$VSCODE_EXECUTABLE")/chrome-sandbox"
+          test -f "$sandbox" && test ! -L "$sandbox"
+          sudo chown root:root -- "$sandbox"
+          sudo chmod 4755 -- "$sandbox"
+
+      - name: Real minimum-version extension host (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a node scripts/check-extension-host.cjs
+        working-directory: editors/vscode
+        env:
+          FIDAN_BIN: ${{ github.workspace }}/compiler/target/debug/fidan${{ matrix.suffix }}
+          VSCODE_EXECUTABLE: ${{ steps.host.outputs.executable }}
+          FIDAN_ARGS_ROOT: ${{ github.workspace }}/args
+          FIDAN_HOST_DIAGNOSTICS: ${{ inputs.cli_diagnostics && 'trace' || 'off' }}
+      - name: Real minimum-version extension host (Windows/macOS)
+        if: runner.os != 'Linux'
+        run: node scripts/check-extension-host.cjs
+        working-directory: editors/vscode
+        env:
+          FIDAN_BIN: ${{ github.workspace }}/compiler/target/debug/fidan${{ matrix.suffix }}
+          VSCODE_EXECUTABLE: ${{ steps.host.outputs.executable }}
+          FIDAN_ARGS_ROOT: ${{ github.workspace }}/args
+          FIDAN_HOST_DIAGNOSTICS: ${{ inputs.cli_diagnostics && 'trace' || 'off' }}

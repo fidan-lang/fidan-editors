@@ -4,7 +4,7 @@
   "description": "Official VS Code support for Fidan with syntax highlighting, snippets, LSP-powered tooling, and AI-assisted fix, improve, and explain commands.",
   "version": "1.0.10",
   "publisher": "fidan",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "Apache-2.0",
   "icon": "./icons/icon_128x128.png",
   "repository": {
     "type": "git",
@@ -168,7 +168,7 @@
           "default": "none",
           "description": "Pass `--trace <mode>` to `fidan run` and `fidan repl`."
         },
-        "fidan.run.sandbox": {
+        "fidan.run.sandbox.enabled": {
           "type": "boolean",
           "default": false,
           "description": "Pass `--sandbox` to `fidan run` (deny file and environment access by default)."
@@ -179,7 +179,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "Path prefixes passed via `--allow-read` when `fidan.run.sandbox` is enabled. Use `*` to allow all."
+          "description": "Path prefixes passed via `--allow-read` when `fidan.run.sandbox.enabled` is enabled. Use `*` to allow all."
         },
         "fidan.run.sandbox.allowWrite": {
           "type": "array",
@@ -187,12 +187,12 @@
             "type": "string"
           },
           "default": [],
-          "description": "Path prefixes passed via `--allow-write` when `fidan.run.sandbox` is enabled."
+          "description": "Path prefixes passed via `--allow-write` when `fidan.run.sandbox.enabled` is enabled."
         },
         "fidan.run.sandbox.allowEnv": {
           "type": "boolean",
           "default": false,
-          "description": "Pass `--allow-env` when `fidan.run.sandbox` is enabled."
+          "description": "Pass `--allow-env` when `fidan.run.sandbox.enabled` is enabled."
         },
         "fidan.run.sandbox.timeLimit": {
           "type": "number",
@@ -479,10 +479,12 @@
     "sync-license": "node -e \"require('fs').copyFileSync('../LICENSE', 'LICENSE')\"",
     "compile": "npm run typecheck && npm run bundle",
     "watch": "node ./scripts/build.mjs --watch",
-    "lint": "eslint src --ext ts",
+    "lint": "eslint src --ext ts --max-warnings 0",
     "typecheck": "tsc --noEmit -p ./",
     "bundle": "node ./scripts/build.mjs",
-    "sync-notice": "node -e \"require('fs').copyFileSync('../NOTICE', 'NOTICE')\""
+    "sync-notice": "node -e \"require('fs').copyFileSync('../NOTICE', 'NOTICE')\"",
+    "check:compatibility": "node scripts/check-compatibility.mjs && node --test scripts/check-extension-host.test.cjs",
+    "check:host": "node scripts/check-extension-host.cjs"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",

@@ -4,7 +4,7 @@
   <p><em>Official editor integrations for the <strong>Fidan</strong> programming language</em></p>
 
   [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/fidan.fidan?label=Marketplace&logo=visualstudiocode&logoColor=white&color=0078d7)](https://marketplace.visualstudio.com/items?itemName=fidan.fidan)&nbsp;[![VS Code Engine](https://img.shields.io/badge/VS%20Code-%5E1.110.0-007ACC?logo=visualstudiocode&logoColor=white)](https://code.visualstudio.com)
-  [![License](https://img.shields.io/badge/license-Apache--2.0%20(Modified)-brightgreen)](LICENSE)&nbsp;[![Fidan Language](https://img.shields.io/badge/language-Fidan-orange)](https://fidan.dev)
+  [![License](https://img.shields.io/badge/license-Apache--2.0-brightgreen)](LICENSE)&nbsp;[![Fidan Language](https://img.shields.io/badge/language-Fidan-orange)](https://fidan.dev)
 </div>
 
 ---
@@ -295,11 +295,17 @@ All settings live under the `fidan.*` namespace in VS Code.
 
 #### Sandbox
 
-When `fidan.run.sandbox` is `true`, file and environment access is denied by default. Grant permissions individually:
+When `fidan.run.sandbox.enabled` is `true`, file and environment access is denied by default. Grant permissions individually:
+
+The audit candidate uses `.enabled` to avoid a VS Code configuration collision
+between a boolean parent and its permission children. The old boolean
+`fidan.run.sandbox` remains recognized as a legacy on/off flag; remove that key
+and use `.enabled` when configuring permissions. This migration is unreleased.
+
 
 | Setting | Default | Description |
 |---|---|---|
-| `fidan.run.sandbox` | `false` | Enable sandbox mode |
+| `fidan.run.sandbox.enabled` | `false` | Enable sandbox mode |
 | `fidan.run.sandbox.allowRead` | `[]` | Allowed read path prefixes (`["*"]` = all) |
 | `fidan.run.sandbox.allowWrite` | `[]` | Allowed write path prefixes |
 | `fidan.run.sandbox.allowEnv` | `false` | Allow environment variable access |
@@ -358,7 +364,25 @@ Security issues should be reported in accordance with [SECURITY.md](SECURITY.md)
 
 This extension is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) for the full text.
 
-Commercial software use, distribution and sale are permitted under the license. Additional restrictions concern Fidan trademarks/branding and false official affiliation; see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Commercial use, modification, redistribution, sale and hosting are permitted under
+the license. Preserve [NOTICE](NOTICE) attribution. Branding is separate from the
+software license: see the [Fidan trademark policy](https://github.com/fidan-lang/fidan/blob/main/TRADEMARKS.md).
+Truthful descriptive references and independent forks are welcome; do not falsely
+claim official affiliation or endorsement.
 
 Copyright © 2026 Kaan Gönüldinc (AppSolves). All rights reserved.
-**Fidan™** is a trademark of Kaan Gönüldinc (AppSolves).
+Fidan identifies the official language project; branding guidance is linked above.
+
+## Compatibility checks
+
+Run `FIDAN_BIN=/path/to/approved/candidate/fidan npm run check:compatibility` from `vscode/` (set the environment variable using your shell). Without FIDAN_BIN, the same check runs only the VM-based builder/metadata regressions.
+
+For candidate language features, select the matching compiler with
+`fidan.server.path`. The VS Code Fidan output channel shows the selected executable
+and server-reported version; see [compiler selection](vscode/README.md#selecting-the-compiler-for-newer-language-apis).
+Updating an editor extension does not replace the user's Fidan installation.
+
+The coordinated compiler target is **Fidan 1.1.0 stable** with its protocol-8 helper.
+Before publication, candidate jobs use exact source SHAs and require actual args
+source in both JSON-RPC and Extension Host tests. A source binary still reporting
+1.0.16 is not represented as the prepared 1.1.0 release.

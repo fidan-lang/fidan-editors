@@ -1,0 +1,8 @@
+{
+  "compiler_repository": "fidan-lang/fidan",
+  "compiler_sha": "9d316205f3a23584f5f91e09572c2c7391a350c6",
+  "compiler_version": "1.0.16",
+  "setup_sha": "096d2a496cfd03b31fb0e67e4cdbb34f23f98df3",
+  "args_repository": "fidan-lang/args",
+  "args_sha": "60a6e93d3e166c8310812210bd523a537db65e7a"
+}

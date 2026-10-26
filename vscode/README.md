@@ -28,6 +28,21 @@ First-class VS Code support for the [Fidan](https://fidan.dev) programming langu
 
 Compatibility target: **Fidan CLI 1.0.16**. Normal editing and LSP features require only the `fidan` binary on your `PATH`, or an explicit `fidan.server.path`. AI-assisted commands additionally require a compatible `ai-analysis` toolchain and provider configuration; AI setup is optional for normal editing.
 
+### Selecting the compiler for newer language APIs
+
+The **Fidan** output channel records the executable selected by
+`fidan.server.path`, the spawned `lsp` command and the server-reported version.
+Changing that setting restarts the language server. An absolute path also avoids
+selecting a different installation from PATH; paths containing spaces are supported.
+
+Callable reflection (`action.name`, `.parameters`, `.invoke(list)`), imported
+custom decorators and their associated diagnostics are tested with the coordinated
+future compiler candidate. The published Fidan 1.0.16 binary does not implement
+those new APIs. Point `fidan.server.path` at the candidate when editing candidate
+sources; installing this extension does not upgrade the compiler. Normal editing
+with the published compiler remains supported within that compiler's language
+surface. AI provider configuration is unrelated to this selection.
+
 Build from source:
 
 ```bash
@@ -71,6 +86,17 @@ All commands are available from the **Command Palette** (`Ctrl+Shift+P`). **Run*
 | `fidan.server.extraArgs` | `[]` | Extra arguments forwarded to `fidan lsp` |
 | `fidan.trace.server` | `"off"` | LSP trace level: `off` \| `messages` \| `verbose` |
 
+### Compiler operational diagnostics (candidate)
+
+When using the new compiler candidate, set `fidan.server.extraArgs` to `["-vvv"]`
+for internal TRACE diagnostics, `["-vv"]` for DEBUG, or `["-v"]` for INFO.
+These records reach the language-server output channel over stderr; JSON-RPC
+continues to use stdout. `fidan.trace.server` separately controls client protocol
+tracing. The published Fidan 1.0.16 binary does not support these new flags.
+Normal editing needs neither verbose logging nor AI/provider setup. Logs omit
+source and credential payloads but may contain private local paths and package
+identities; review them before sharing.
+
 ### Formatting
 
 | Setting | Default | Description |
@@ -96,11 +122,17 @@ All commands are available from the **Command Palette** (`Ctrl+Shift+P`). **Run*
 
 ### Sandbox
 
-When `fidan.run.sandbox` is `true`, file and environment access is denied by default. Grant permissions individually:
+When `fidan.run.sandbox.enabled` is `true`, file and environment access is denied by default. Grant permissions individually:
+
+The audit candidate uses `.enabled` to avoid a VS Code configuration collision
+between a boolean parent and its permission children. The old boolean
+`fidan.run.sandbox` remains recognized as a legacy on/off flag; remove that key
+and use `.enabled` when configuring permissions. This migration is unreleased.
+
 
 | Setting | Default | Description |
 |---|---|---|
-| `fidan.run.sandbox` | `false` | Enable sandbox mode |
+| `fidan.run.sandbox.enabled` | `false` | Enable sandbox mode |
 | `fidan.run.sandbox.allowRead` | `[]` | Allowed read path prefixes (`["*"]` = all) |
 | `fidan.run.sandbox.allowWrite` | `[]` | Allowed write path prefixes |
 | `fidan.run.sandbox.allowEnv` | `false` | Allow environment variable access |
@@ -128,7 +160,26 @@ When `fidan.run.sandbox` is `true`, file and environment access is denied by def
 
 Licensed under the **Apache License 2.0** — see [LICENSE](LICENSE) for the full text.
 
-Commercial software use, distribution and sale are permitted under the license. Additional restrictions concern Fidan trademarks/branding and false official affiliation; see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Commercial use, modification, redistribution, sale and hosting are permitted under
+the license. Preserve [NOTICE](NOTICE) attribution. Branding is separate from the
+software license: see the [Fidan trademark policy](https://github.com/fidan-lang/fidan/blob/main/TRADEMARKS.md).
+Truthful descriptive references and independent forks are welcome; do not falsely
+claim official affiliation or endorsement.
 
 Copyright © 2026 Kaan Gönüldinc (AppSolves). All rights reserved.  
-**Fidan™** is a trademark of Kaan Gönüldinc (AppSolves).
+Fidan identifies the official language project; branding guidance is linked above.
+
+Terminal commands quote arguments literally for PowerShell and POSIX shells. For cmd.exe, unsafe shell metacharacters are rejected; select PowerShell or Bash for such paths. Run settings are placed before the source filename so Fidan consumes them rather than forwarding them to the program.
+
+Terminal commands open a fresh terminal using the current default profile, so
+quoting cannot drift from a reused terminal's shell. PowerShell, the Windows
+Command Prompt and WSL profiles, and POSIX-shell argument quoting are handled separately.
+Arguments unsafe for Command Prompt expansion are rejected; use PowerShell/Bash
+for paths containing its expansion/metacharacters. Commands sent to a terminal
+do not imply successful completion.
+
+To verify the candidate diagnostics transport locally, run `npm run check:host`
+with `FIDAN_HOST_DIAGNOSTICS=trace`, `FIDAN_BIN` selecting the new candidate and
+`VSCODE_EXECUTABLE` selecting an isolated VS Code host. The manual verification
+workflow exposes the corresponding `cli_diagnostics` input alongside `compiler_ref`.
+Old public compilers are not expected to implement these new flags.

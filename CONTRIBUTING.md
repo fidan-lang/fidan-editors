@@ -33,7 +33,7 @@ Press **F5** in VS Code (with this workspace open) to launch the **Extension Dev
 
 ### 4. Validate compatibility and packaging
 
-There is no automated Extension Development Host test suite. Run the focused CLI compatibility regression check, then validate the actual package from `vscode/`:
+Run the focused CLI compatibility regression check, then validate the actual package from `vscode/`:
 
 ```bash
 node scripts/check-compatibility.mjs
@@ -41,7 +41,15 @@ node scripts/check-compatibility.mjs
 npx @vscode/vsce package --out ../artifacts/fidan-1.0.10.vsix
 ```
 
-Inspect the VSIX contents and exercise changed editor commands in the Extension Development Host before release.
+For the installed-editor smoke test, set `FIDAN_BIN` and `VSCODE_EXECUTABLE` to
+absolute paths for the candidate CLI and installed Code executable, then run
+`npm run check:host` from `vscode/`. It uses an isolated profile/workspace under
+`target/`, actual LSP diagnostics/completion/hover/formatting/navigation and server
+restart, without provider calls or user-profile changes. It requires a working
+local desktop/editor installation; it does not replace manual terminal/dialog or
+AI-provider acceptance tests.
+
+Inspect the VSIX contents and exercise changed editor commands before release.
 
 ---
 

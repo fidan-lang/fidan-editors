@@ -26,27 +26,34 @@ function terminalBin(config: vscode.WorkspaceConfiguration): string {
 }
 
 function q(p: string): string {
-  return `"${p.replace(/"/g, '\\"')}"`;
+  if (/[\r\n\0]/.test(p)) { throw new Error("Terminal arguments must be single-line strings."); }
+  if (needsPowerShellCallOperator()) { return "'" + p.replace(/'/g, "''") + "'"; }
+  if (terminalShellKind() === "cmd") {
+    if (/["&|<>^%!]/.test(p)) { throw new Error("This argument cannot be passed safely to cmd.exe. Select PowerShell or Bash."); }
+    return `"${p}"`;
+  }
+  return "'" + p.replace(/'/g, "'\\''") + "'";
+}
+
+function terminalShellKind(): "powershell" | "cmd" | "posix" {
+  const hint = resolveTerminalShellHint();
+  if (process.platform === "win32" && /(?:cmd(?:\.exe)?|Command Prompt)$/i.test(hint ?? "")) {
+    return "cmd";
+  }
+  return (hint ? /(pwsh|powershell)(\.exe)?$/i.test(hint) : process.platform === "win32")
+    ? "powershell" : "posix";
 }
 
 function needsPowerShellCallOperator(): boolean {
-  if (process.platform !== "win32") {
-    return false;
-  }
-
-  const shellHint = resolveTerminalShellHint();
-  if (!shellHint) {
-    return true;
-  }
-
-  return /(pwsh|powershell)(\.exe)?$/i.test(shellHint);
+  return terminalShellKind() === "powershell";
 }
 
 function resolveTerminalShellHint(): string | undefined {
   const terminalConfig = vscode.workspace.getConfiguration("terminal.integrated");
-  const defaultProfile = terminalConfig.get<string>("defaultProfile.windows");
+  const platform = process.platform === "win32" ? "windows" : process.platform === "darwin" ? "osx" : "linux";
+  const defaultProfile = terminalConfig.get<string>(`defaultProfile.${platform}`);
   const profiles = terminalConfig.get<Record<string, { path?: string | string[]; source?: string }>>(
-    "profiles.windows",
+    `profiles.${platform}`,
   );
 
   if (defaultProfile && profiles?.[defaultProfile]) {
@@ -61,6 +68,10 @@ function resolveTerminalShellHint(): string | undefined {
     }
   }
 
+  // Built-in profiles need not have a user-defined profiles entry.
+  if (defaultProfile && /^(Command Prompt|PowerShell|Windows PowerShell|Git Bash|Bash|zsh|.+ \(WSL\))$/i.test(defaultProfile)) {
+    return defaultProfile;
+  }
   return undefined;
 }
 
@@ -86,12 +97,9 @@ async function requireActiveFidanEditor(save = true): Promise<vscode.TextEditor 
 }
 
 function runCmd(name: string, cmd: string): void {
-  let terminal = vscode.window.terminals.find(
-    t => t.name === name && t.exitStatus === undefined,
-  );
-  if (!terminal) {
-    terminal = vscode.window.createTerminal(name);
-  }
+  // Quoting targets the current default profile. Reused terminals can retain an
+  // old profile or a nested shell, so send commands only to a fresh terminal.
+  const terminal = vscode.window.createTerminal(name);
   terminal.show(true);
   terminal.sendText(cmd);
 }
@@ -102,7 +110,7 @@ function buildRunCommand(
   config: vscode.WorkspaceConfiguration,
   reload: boolean,
 ): string {
-  const args: string[] = [q(filePath)];
+  const args: string[] = [];
 
   if (reload) {
     args.push("--reload");
@@ -113,52 +121,58 @@ function buildRunCommand(
 
   const trace = config.get<string>("run.trace") ?? "none";
   if (trace !== "none") {
-    args.push(`--trace ${trace}`);
+    args.push(`--trace ${q(String(trace))}`);
   }
 
   const jit = config.get<number>("run.jitThreshold") ?? 500;
   if (jit !== 500) {
-    args.push(`--jit-threshold ${jit}`);
+    args.push(`--jit-threshold ${q(String(jit))}`);
   }
 
   const maxErrors = config.get<number>("run.maxErrors") ?? 1;
   if (maxErrors !== 1) {
-    args.push(`--max-errors ${maxErrors}`);
+    args.push(`--max-errors ${q(String(maxErrors))}`);
   }
 
   const suppress = (config.get<string[]>("run.suppress") ?? []).join(",");
   if (suppress) {
-    args.push(`--suppress ${suppress}`);
+    args.push(`--suppress ${q(String(suppress))}`);
   }
 
   const emit = (config.get<string[]>("run.emit") ?? []).join(",");
   if (emit) {
-    args.push(`--emit ${emit}`);
+    args.push(`--emit ${q(String(emit))}`);
   }
 
-  if (config.get<boolean>("run.sandbox") ?? false) {
+  // A boolean parent setting hides its dotted permission children in VS Code.
+  // Keep recognizing the legacy flag, but use a separate enabled leaf now.
+  const sandbox = config.get<boolean>("run.sandbox.enabled") === true
+    || config.get<unknown>("run.sandbox") === true;
+  if (sandbox) {
     args.push("--sandbox");
     const allowRead = (config.get<string[]>("run.sandbox.allowRead") ?? []).join(",");
     if (allowRead) {
-      args.push(`--allow-read ${allowRead}`);
+      args.push(`--allow-read ${q(String(allowRead))}`);
     }
     const allowWrite = (config.get<string[]>("run.sandbox.allowWrite") ?? []).join(",");
     if (allowWrite) {
-      args.push(`--allow-write ${allowWrite}`);
+      args.push(`--allow-write ${q(String(allowWrite))}`);
     }
     if (config.get<boolean>("run.sandbox.allowEnv") ?? false) {
       args.push("--allow-env");
     }
     const timeLimit = config.get<number>("run.sandbox.timeLimit") ?? 0;
     if (timeLimit > 0) {
-      args.push(`--time-limit ${timeLimit}`);
+      args.push(`--time-limit ${q(String(timeLimit))}`);
     }
     const memLimit = config.get<number>("run.sandbox.memLimit") ?? 0;
     if (memLimit > 0) {
-      args.push(`--mem-limit ${memLimit}`);
+      args.push(`--mem-limit ${q(String(memLimit))}`);
     }
   }
 
+  // After the source path, run forwards all remaining tokens to the program.
+  args.push(q(filePath));
   return `${bin} run ${args.join(" ")}`;
 }
 
@@ -169,11 +183,11 @@ function buildCheckArgs(config: vscode.WorkspaceConfiguration, strict: boolean):
   }
   const maxErrors = config.get<number>("check.maxErrors") ?? 0;
   if (maxErrors > 0) {
-    parts.push(`--max-errors ${maxErrors}`);
+    parts.push(`--max-errors ${q(String(maxErrors))}`);
   }
   const suppress = (config.get<string[]>("check.suppress") ?? []).join(",");
   if (suppress) {
-    parts.push(`--suppress ${suppress}`);
+    parts.push(`--suppress ${q(String(suppress))}`);
   }
   return parts.length ? " " + parts.join(" ") : "";
 }
@@ -189,7 +203,7 @@ function buildBuildArgs(config: vscode.WorkspaceConfiguration, release: boolean)
   }
   const emit = (config.get<string[]>("build.emit") ?? []).join(",");
   if (emit) {
-    parts.push(`--emit ${emit}`);
+    parts.push(`--emit ${q(String(emit))}`);
   }
   return parts.length ? " " + parts.join(" ") : "";
 }
@@ -402,6 +416,16 @@ async function applyClientTraceFromConfig(): Promise<void> {
   await client.setTrace(traceLevelFromSetting(config.get<string>("trace.server") ?? "off"));
 }
 
+function documentFormattingOptions(document: vscode.TextDocument): vscode.FormattingOptions {
+  const editorConfig = vscode.workspace.getConfiguration("editor", document.uri);
+  const fidanConfig = vscode.workspace.getConfiguration("fidan", document.uri);
+  const tabSize = editorConfig.get<number | string>("tabSize");
+  return {
+    tabSize: typeof tabSize === "number" ? tabSize : (fidanConfig.get<number>("format.indentWidth") ?? 4),
+    insertSpaces: editorConfig.get<boolean>("insertSpaces") ?? true,
+  };
+}
+
 function refreshFormatOnSave(context: vscode.ExtensionContext): void {
   formatOnSaveDisposable?.dispose();
   formatOnSaveDisposable = undefined;
@@ -425,19 +449,12 @@ function refreshFormatOnSave(context: vscode.ExtensionContext): void {
         return;
       }
 
-      const liveConfig = vscode.workspace.getConfiguration("fidan");
-      const tabSizeSetting = editorConfig.get<number | string>("tabSize");
-      const tabSize =
-        typeof tabSizeSetting === "number"
-          ? tabSizeSetting
-          : (liveConfig.get<number>("format.indentWidth") ?? 4);
-      const insertSpaces = editorConfig.get<boolean>("insertSpaces") ?? true;
       event.waitUntil(
         vscode.commands
           .executeCommand<vscode.TextEdit[]>(
             "vscode.executeFormatDocumentProvider",
             event.document.uri,
-            { tabSize, insertSpaces },
+            documentFormattingOptions(event.document),
           )
           .then((edits: vscode.TextEdit[] | undefined) => edits ?? []),
       );
@@ -559,7 +576,30 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       await runAiFixLikeCommand("improve", filePath, vscode.workspace.getConfiguration("fidan"));
     }),
     vscode.commands.registerCommand("fidan.formatFile", async () => {
-      await vscode.commands.executeCommand("editor.action.formatDocument");
+      const editor = await requireActiveFidanEditor(false);
+      if (!editor) {
+        return;
+      }
+      const version = editor.document.version;
+      const edits = await vscode.commands.executeCommand<vscode.TextEdit[]>(
+        "vscode.executeFormatDocumentProvider", editor.document.uri,
+        documentFormattingOptions(editor.document),
+      );
+      if (editor.document.version !== version) {
+        void vscode.window.showWarningMessage("Document changed while formatting; run Format File again.");
+        return;
+      }
+      if (!edits?.length) {
+        return;
+      }
+      const applied = await editor.edit(builder => {
+        for (const edit of edits) {
+          builder.replace(edit.range, edit.newText);
+        }
+      });
+      if (!applied) {
+        void vscode.window.showErrorMessage("Fidan could not apply the formatting edits.");
+      }
     }),
     vscode.commands.registerCommand("fidan.buildFile", async () => {
       const filePath = await requireActiveFidanFile();
@@ -590,7 +630,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
       const config = vscode.workspace.getConfiguration("fidan");
       const suppress = (config.get<string[]>("check.suppress") ?? []).join(",");
-      const suppressArg = suppress ? ` --suppress ${suppress}` : "";
+      const suppressArg = suppress ? ` --suppress ${q(String(suppress))}` : "";
       runCmd("Fidan: Test", `${terminalBin(config)} test ${q(filePath)}${suppressArg}`);
     }),
     vscode.commands.registerCommand("fidan.profileFile", async () => {
@@ -688,7 +728,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const trace = config.get<string>("run.trace") ?? "none";
       const terminal = vscode.window.createTerminal("Fidan: REPL");
       terminal.show();
-      terminal.sendText(`${terminalBin(config)} repl --trace ${trace}`);
+      terminal.sendText(`${terminalBin(config)} repl --trace ${q(String(trace))}`);
     }),
   );
 
@@ -728,6 +768,7 @@ async function startClient(): Promise<void> {
   const config = vscode.workspace.getConfiguration("fidan");
   const binaryPath = fidanBin(config);
   const extraArgs: string[] = config.get("server.extraArgs") ?? [];
+  outputChannel.appendLine(`[fidan] Starting language server: ${JSON.stringify(binaryPath)} lsp (fidan.server.path).`);
 
   const serverOptions: ServerOptions = {
     run: {
@@ -754,7 +795,8 @@ async function startClient(): Promise<void> {
     synchronize: {
       fileEvents: vscode.workspace.createFileSystemWatcher("**/*.fdn"),
     },
-    markdown: { isTrusted: true },
+    // Hover documentation can originate in third-party packages/source comments.
+    markdown: { isTrusted: false },
   };
 
   client = new LanguageClient("fidan", "Fidan Language Server", serverOptions, clientOptions);
@@ -762,7 +804,9 @@ async function startClient(): Promise<void> {
   try {
     await client.start();
     await applyClientTraceFromConfig();
-    outputChannel.appendLine("[fidan] Language server started.");
+    const serverInfo = client.initializeResult?.serverInfo;
+    outputChannel.appendLine(`[fidan] Language server started: ${serverInfo?.name ?? "Fidan"} ${serverInfo?.version ?? "version not reported"}.`);
+    outputChannel.appendLine("[fidan] Language features are provided by this selected compiler build; choose the matching candidate for unreleased APIs.");
     setStatusBarRunning();
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
