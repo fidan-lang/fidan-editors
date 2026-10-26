@@ -7,6 +7,11 @@ const extensionRoot = path.resolve(__dirname, "..");
 const traceDiagnostics = process.env.FIDAN_HOST_DIAGNOSTICS === "trace";
 
 if (require.main === module) {
+  const argsRoot = process.env.FIDAN_ARGS_ROOT;
+  assert(argsRoot, "FIDAN_ARGS_ROOT is required for actual args Extension Host coverage");
+  for (const file of ["src/core.fdn", "src/app.fdn", "src/init.fdn", "examples/greet.fdn"]) {
+    assert(fs.statSync(path.join(argsRoot, file)).isFile(), `Missing actual args source: ${file}`);
+  }
   const sourceCompiler = process.env.FIDAN_BIN;
   assert(sourceCompiler && fs.statSync(sourceCompiler).isFile(), "Set FIDAN_BIN to the candidate CLI");
   if (traceDiagnostics) {
@@ -41,7 +46,7 @@ if (require.main === module) {
   fs.writeFileSync(path.join(workspace, "main file.fdn"), "use unavailable_host_smoke_module\n");
   fs.writeFileSync(path.join(workspace, "helper.fdn"),
     "#> [Untrusted documentation](command:workbench.action.closeWindow)\naction answer returns integer { return 42 }\n");
-  const env = { ...process.env, FIDAN_HOST_SMOKE_WORKSPACE: workspace, FIDAN_HOST_SMOKE_PROFILE: profile, FIDAN_HOST_SELECTED_COMPILER: compiler };
+  const env = { ...process.env, FIDAN_ARGS_ROOT: path.resolve(argsRoot), FIDAN_HOST_SMOKE_WORKSPACE: workspace, FIDAN_HOST_SMOKE_PROFILE: profile, FIDAN_HOST_SELECTED_COMPILER: compiler };
   delete env.ELECTRON_RUN_AS_NODE;
   const result = spawnSync(executable, [
     "--new-window", "--skip-welcome", "--skip-release-notes",
@@ -190,7 +195,8 @@ if (require.main === module) {
     assert(afterRestart?.length, "LSP must respond after restart");
     console.log("HOST PASS language server restart");
 
-    if (process.env.FIDAN_ARGS_ROOT) {
+    assert(process.env.FIDAN_ARGS_ROOT, "Actual args source is mandatory");
+    {
       const argsRoot = path.resolve(process.env.FIDAN_ARGS_ROOT);
       let greet;
       let greetUri;
@@ -309,8 +315,6 @@ if (require.main === module) {
           assert.deepEqual(fs.readFileSync(document.uri.fsPath), originalBytes.get(document.uri.fsPath));
         }
       }
-    } else {
-      console.log("HOST SKIP actual args integration: set FIDAN_ARGS_ROOT to the coordinated source checkout");
     }
 
   };

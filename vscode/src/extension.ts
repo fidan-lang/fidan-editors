@@ -577,7 +577,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
     vscode.commands.registerCommand("fidan.formatFile", async () => {
       const editor = await requireActiveFidanEditor(false);
-      if (!editor) return;
+      if (!editor) {
+        return;
+      }
       const version = editor.document.version;
       const edits = await vscode.commands.executeCommand<vscode.TextEdit[]>(
         "vscode.executeFormatDocumentProvider", editor.document.uri,
@@ -587,11 +589,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         void vscode.window.showWarningMessage("Document changed while formatting; run Format File again.");
         return;
       }
-      if (!edits?.length) return;
+      if (!edits?.length) {
+        return;
+      }
       const applied = await editor.edit(builder => {
-        for (const edit of edits) builder.replace(edit.range, edit.newText);
+        for (const edit of edits) {
+          builder.replace(edit.range, edit.newText);
+        }
       });
-      if (!applied) void vscode.window.showErrorMessage("Fidan could not apply the formatting edits.");
+      if (!applied) {
+        void vscode.window.showErrorMessage("Fidan could not apply the formatting edits.");
+      }
     }),
     vscode.commands.registerCommand("fidan.buildFile", async () => {
       const filePath = await requireActiveFidanFile();

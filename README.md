@@ -381,3 +381,8 @@ For candidate language features, select the matching compiler with
 `fidan.server.path`. The VS Code Fidan output channel shows the selected executable
 and server-reported version; see [compiler selection](vscode/README.md#selecting-the-compiler-for-newer-language-apis).
 Updating an editor extension does not replace the user's Fidan installation.
+
+The coordinated compiler target is **Fidan 1.1.0 stable** with its protocol-8 helper.
+Before publication, candidate jobs use exact source SHAs and require actual args
+source in both JSON-RPC and Extension Host tests. A source binary still reporting
+1.0.16 is not represented as the prepared 1.1.0 release.

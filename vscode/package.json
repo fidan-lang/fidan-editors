@@ -479,7 +479,7 @@
     "sync-license": "node -e \"require('fs').copyFileSync('../LICENSE', 'LICENSE')\"",
     "compile": "npm run typecheck && npm run bundle",
     "watch": "node ./scripts/build.mjs --watch",
-    "lint": "eslint src --ext ts",
+    "lint": "eslint src --ext ts --max-warnings 0",
     "typecheck": "tsc --noEmit -p ./",
     "bundle": "node ./scripts/build.mjs",
     "sync-notice": "node -e \"require('fs').copyFileSync('../NOTICE', 'NOTICE')\"",

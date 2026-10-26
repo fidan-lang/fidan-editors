@@ -53,7 +53,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           repository: fidan-lang/fidan-actions
-          ref: a1800c42f9fba633b78ab6a96c204952ebca5ff5
+          ref: 096d2a496cfd03b31fb0e67e4cdbb34f23f98df3
           path: audited-setup
           persist-credentials: false
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
@@ -70,6 +70,13 @@ jobs:
           ref: ${{ steps.candidate.outputs.compiler_sha }}
           persist-credentials: false
           path: compiler
+      - name: Checkout exact args source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          repository: fidan-lang/args
+          ref: ${{ steps.candidate.outputs.args_sha }}
+          path: args
+          persist-credentials: false
       - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
       - name: Linux compiler system dependencies
         if: runner.os == 'Linux'
@@ -77,7 +84,7 @@ jobs:
       - name: Verify checked-out compiler identity
         env:
           REQUESTED_COMPILER_SHA: ${{ inputs.compiler_ref }}
-        run: node audited-setup/scripts/verify-candidate.mjs editors/ci/compiler-candidate.json audited-setup compiler
+        run: node audited-setup/scripts/verify-candidate.mjs editors/ci/compiler-candidate.json audited-setup compiler args
       - run: cargo build --manifest-path compiler/Cargo.toml -p fidan-cli --locked
       - name: Verify installer using this platform's actual built candidate
         env:
@@ -93,6 +100,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Workflow security gate failed' }
           python editors/ci/test-release-tag.py
           if ($LASTEXITCODE -ne 0) { throw 'Release tag guard regressions failed' }
+          python editors/ci/test-candidate-coverage.py
+          if ($LASTEXITCODE -ne 0) { throw 'Mandatory candidate coverage regressions failed' }
       - run: npm ci
         working-directory: editors/vscode
       - run: npm run check:compatibility
@@ -101,6 +110,14 @@ jobs:
           FIDAN_BIN: ${{ github.workspace }}/compiler/target/debug/fidan${{ matrix.suffix }}
       - run: npm run lint && npm run compile
         working-directory: editors/vscode
+      - name: Actual args LSP JSON-RPC regressions
+        shell: pwsh
+        env:
+          FIDAN_BIN: ${{ github.workspace }}/compiler/target/debug/fidan${{ matrix.suffix }}
+          FIDAN_ARGS_ROOT: ${{ github.workspace }}/args
+        run: |
+          python compiler/test/scripts/test_args_lsp.py
+          if ($LASTEXITCODE -ne 0) { throw 'Actual args LSP regressions failed' }
       - name: Prepare verified minimum VS Code host
         id: host
         run: node scripts/prepare-extension-host.mjs
@@ -124,6 +141,7 @@ jobs:
         env:
           FIDAN_BIN: ${{ github.workspace }}/compiler/target/debug/fidan${{ matrix.suffix }}
           VSCODE_EXECUTABLE: ${{ steps.host.outputs.executable }}
+          FIDAN_ARGS_ROOT: ${{ github.workspace }}/args
           FIDAN_HOST_DIAGNOSTICS: ${{ inputs.cli_diagnostics && 'trace' || 'off' }}
       - name: Real minimum-version extension host (Windows/macOS)
         if: runner.os != 'Linux'
@@ -132,4 +150,5 @@ jobs:
         env:
           FIDAN_BIN: ${{ github.workspace }}/compiler/target/debug/fidan${{ matrix.suffix }}
           VSCODE_EXECUTABLE: ${{ steps.host.outputs.executable }}
+          FIDAN_ARGS_ROOT: ${{ github.workspace }}/args
           FIDAN_HOST_DIAGNOSTICS: ${{ inputs.cli_diagnostics && 'trace' || 'off' }}
