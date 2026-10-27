@@ -81,7 +81,7 @@ ext install fidan.fidan
 
    Press **F5** in VS Code to launch the Extension Development Host.
 
-> **Compatibility target:** Fidan CLI 1.0.16. Normal editing and LSP features require only the `fidan` binary on your `PATH`, or an explicit `fidan.server.path`. AI-assisted commands additionally require a compatible `ai-analysis` toolchain and provider configuration; AI setup is optional for normal editing.
+> **Compatibility target:** Fidan CLI 1.1.0; the 1.0.16 baseline remains supported for its existing features. Normal editing and LSP features require only the `fidan` binary on your `PATH`, or an explicit `fidan.server.path`. AI-assisted commands additionally require a compatible `ai-analysis` toolchain and provider configuration; AI setup is optional for normal editing.
 
 ---
 
@@ -384,5 +384,6 @@ Updating an editor extension does not replace the user's Fidan installation.
 
 The coordinated compiler target is **Fidan 1.1.0 stable** with its protocol-8 helper.
 Before publication, candidate jobs use exact source SHAs and require actual args
-source in both JSON-RPC and Extension Host tests. A source binary still reporting
-1.0.16 is not represented as the prepared 1.1.0 release.
+source in both JSON-RPC and Extension Host tests. The source version, immutable
+commit identity and behavioral probes are checked explicitly; older 1.0.16
+binaries are not substituted.

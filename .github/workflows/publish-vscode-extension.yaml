@@ -87,7 +87,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           repository: fidan-lang/fidan-actions
-          ref: 096d2a496cfd03b31fb0e67e4cdbb34f23f98df3
+          ref: f02424b12857f728098a2ec42760ad8c4304aa7d
           path: audited-setup
           persist-credentials: false
       - name: Read exact compiler candidate contract
