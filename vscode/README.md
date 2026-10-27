@@ -26,7 +26,7 @@ First-class VS Code support for the [Fidan](https://fidan.dev) programming langu
 
 ## Requirements
 
-Compatibility target: **Fidan CLI 1.0.16**. Normal editing and LSP features require only the `fidan` binary on your `PATH`, or an explicit `fidan.server.path`. AI-assisted commands additionally require a compatible `ai-analysis` toolchain and provider configuration; AI setup is optional for normal editing.
+Compatibility target: **Fidan CLI 1.1.0**, with the 1.0.16 baseline retained for existing features. Normal editing and LSP features require only the `fidan` binary on your `PATH`, or an explicit `fidan.server.path`. AI-assisted commands additionally require a compatible `ai-analysis` toolchain and provider configuration; AI setup is optional for normal editing.
 
 ### Selecting the compiler for newer language APIs
 
@@ -37,7 +37,7 @@ selecting a different installation from PATH; paths containing spaces are suppor
 
 Callable reflection (`action.name`, `.parameters`, `.invoke(list)`), imported
 custom decorators and their associated diagnostics are tested with the coordinated
-future compiler candidate. The published Fidan 1.0.16 binary does not implement
+Fidan 1.1.0 compiler source. The published Fidan 1.0.16 binary does not implement
 those new APIs. Point `fidan.server.path` at the candidate when editing candidate
 sources; installing this extension does not upgrade the compiler. Normal editing
 with the published compiler remains supported within that compiler's language
@@ -86,9 +86,9 @@ All commands are available from the **Command Palette** (`Ctrl+Shift+P`). **Run*
 | `fidan.server.extraArgs` | `[]` | Extra arguments forwarded to `fidan lsp` |
 | `fidan.trace.server` | `"off"` | LSP trace level: `off` \| `messages` \| `verbose` |
 
-### Compiler operational diagnostics (candidate)
+### Compiler operational diagnostics (Fidan 1.1.0)
 
-When using the new compiler candidate, set `fidan.server.extraArgs` to `["-vvv"]`
+When using Fidan 1.1.0, set `fidan.server.extraArgs` to `["-vvv"]`
 for internal TRACE diagnostics, `["-vv"]` for DEBUG, or `["-v"]` for INFO.
 These records reach the language-server output channel over stderr; JSON-RPC
 continues to use stdout. `fidan.trace.server` separately controls client protocol
